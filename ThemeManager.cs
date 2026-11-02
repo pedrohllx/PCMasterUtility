@@ -13,22 +13,24 @@ public static class ThemeManager
 
     private static readonly (object Key, string Dark, string Light)[] Palette =
     {
-        ("Bg", "#000000", "#FFFFFF"),
-        ("Panel", "#080808", "#F2F2F2"),
-        ("Card", "#0E0E0E", "#FFFFFF"),
-        ("Hover", "#181818", "#E4E4E4"),
-        ("Line", "#1F1F1F", "#CFCFCF"),
-        ("LineStrong", "#3A3A3A", "#8A8A8A"),
-        ("Fg", "#F5F5F5", "#111111"),
-        ("Muted", "#8C8C8C", "#3F3F3F"),
-        ("Faint", "#4A4A4A", "#5C5C5C"),
-        ("Ink", "#000000", "#FFFFFF"),
-        ("ThumbBrush", "#2E2E2E", "#CFCFCF"),
-        ("ThumbHover", "#6A6A6A", "#A5A5A5"),
-        ("ThumbDrag", "#9A9A9A", "#7A7A7A"),
-        (SystemColors.ControlBrushKey, "#000000", "#FFFFFF"),
-        (SystemColors.HighlightBrushKey, "#181818", "#E4E4E4"),
-        (SystemColors.InactiveSelectionHighlightBrushKey, "#181818", "#E4E4E4"),
+        // Paleta do ícone: tons neutros levemente arroxeados; o roxo/ciano de destaque fica no Theme.xaml (igual nos dois modos).
+        ("Bg", "#07060D", "#FFFFFF"),
+        ("Panel", "#0B0A14", "#F6F4FD"),
+        ("Card", "#110F1D", "#FFFFFF"),
+        ("Hover", "#1B1830", "#ECE8FA"),
+        ("Line", "#24203A", "#DAD4F0"),
+        ("LineStrong", "#3F3866", "#9088B8"),
+        ("Fg", "#F4F2FF", "#14111F"),
+        ("Muted", "#9B95B8", "#4A4560"),
+        ("Faint", "#4C466B", "#6A6485"),
+        ("Ink", "#07060D", "#FFFFFF"),
+        ("ThumbBrush", "#2C2746", "#D6D0EE"),
+        ("ThumbHover", "#5A5290", "#ABA2D6"),
+        ("ThumbDrag", "#8A80C8", "#8A80C8"),
+        ("Accent", "#A66BFF", "#8B3FF0"),
+        (SystemColors.ControlBrushKey, "#07060D", "#FFFFFF"),
+        (SystemColors.HighlightBrushKey, "#1B1830", "#ECE8FA"),
+        (SystemColors.InactiveSelectionHighlightBrushKey, "#1B1830", "#ECE8FA"),
     };
 
     public static void Apply(bool light)
