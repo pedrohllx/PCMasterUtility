@@ -36,7 +36,7 @@ public partial class MainWindow
         BtnDebloatLatest.Visibility = vendors.Contains("nvidia") ? Visibility.Visible : Visibility.Collapsed;
         BtnDebloatUndo.Visibility = applied.Values.Any(x => x) ? Visibility.Visible : Visibility.Collapsed;
         DebloatStatus.Text = vendors.Count == 0 ? "Nenhuma placa NVIDIA, AMD ou Intel encontrada."
-            : "O que pode quebrar algo (áudio pela HDMI, PhysX, DLDSR, notebooks…) vem desmarcado. Serviços são desativados, não apagados, e podem ser desfeitos.";
+            : "";
     }
 
     private async void BtnDebloat7z_Click(object sender, RoutedEventArgs e)
@@ -79,7 +79,7 @@ public partial class MainWindow
     {
         if (DriverDebloat.SevenZip() != null) return true;
         DebloatNo7z.Visibility = Visibility.Visible;
-        DebloatStatus.Text = "Instale o 7-Zip primeiro (link acima).";
+        DebloatStatus.Text = "A instalação enxuta precisa do 7-Zip: use o link \"Instalar o 7-Zip\" acima.";
         return false;
     }
 
@@ -89,7 +89,7 @@ public partial class MainWindow
         string what = vendor == "nvidia" ? "Sai do pacote:" : "Depois de instalar:";
         return MessageBox.Show(this,
             $"Instalar o driver {vendor.ToUpperInvariant()} do jeito enxuto, em silêncio e limpo?\n\n{what}\n{(picked.Count == 0 ? "• nada (instalação completa)" : string.Join("\n", picked))}\n\n" +
-            "As configurações antigas do driver são apagadas (aplique as recomendadas depois). Não reinicia sozinho.",
+            "As configurações antigas do driver são apagadas; depois, as configurações marcadas no cartão são aplicadas. Não reinicia sozinho.",
             "Instalação enxuta", MessageBoxButton.OKCancel, MessageBoxImage.Question) == MessageBoxResult.OK;
     }
 

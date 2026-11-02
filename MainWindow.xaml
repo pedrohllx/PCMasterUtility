@@ -861,7 +861,6 @@
                                     <RadioButton Style="{StaticResource Chip}" GroupName="DduGpu" Content="Intel" Tag="intel"/>
                                     <RadioButton Style="{StaticResource Chip}" GroupName="DduGpu" Content="Todas as placas" Tag="all"/>
                                 </WrapPanel>
-                                <CheckBox x:Name="DduPreDownload" Content="Baixar antes o driver NVIDIA mais recente (para reinstalar logo depois, mesmo sem internet)" IsChecked="True" Margin="0,0,0,8"/>
                                 <CheckBox x:Name="DduBlockWu" Content="Impedir o Windows Update de instalar um driver de vídeo sozinho (dá para desfazer)" IsChecked="True" Margin="0,0,0,8"/>
                                 <CheckBox x:Name="DduAudio" Content="Também remover drivers de áudio Realtek e Sound Blaster (o PC fica sem som até reinstalar)" Margin="0,0,0,12"/>
                                 <WrapPanel>
@@ -871,15 +870,13 @@
                                             ToolTip="Escolha o instalador oficial do DDU baixado do site da Wagnardsoft"/>
                                     <Button x:Name="BtnDduWuRestore" Style="{StaticResource OutlineButton}" Content="Liberar drivers pelo Windows Update" Padding="14,9" Margin="0,0,10,8"
                                             Visibility="Collapsed" Click="BtnDduWuRestore_Click"/>
-                                    <Button x:Name="BtnDduInstall" Style="{StaticResource OutlineButton}" Content="Instalar o driver baixado antes da limpeza" Padding="14,9" Margin="0,0,10,8"
-                                            Visibility="Collapsed" Click="BtnDduInstall_Click"/>
                                 </WrapPanel>
                                 <TextBlock x:Name="DduStatus" Foreground="{DynamicResource Accent}" TextWrapping="Wrap"/>
                                 <TextBlock x:Name="DduLog" Foreground="{DynamicResource Muted}" FontSize="11.5" TextWrapping="Wrap" FontFamily="{StaticResource Mono}" Margin="0,6,0,0"/>
                             </StackPanel>
                         </Border>
 
-                        <!-- Instalar driver + configurações recomendadas (Ultimate · 5 Graphics · 3 Driver Updated Install & Settings) -->
+                        <!-- Instalar driver (normal ou enxuta) + configurações do Painel NVIDIA (Ultimate · 5 Graphics · 2, 3 e 4) -->
                         <Border Style="{StaticResource CardBorder}" Margin="0,0,0,14">
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
@@ -888,22 +885,41 @@
                                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
                                     <StackPanel VerticalAlignment="Center">
-                                        <TextBlock Text="Instalar driver e configurações recomendadas" FontSize="15" FontWeight="SemiBold"/>
-                                        <TextBlock Text="Driver novo instalado do zero e os ajustes de desempenho do driver e do Windows, cada um com desfazer" Foreground="{DynamicResource Muted}" FontSize="12"/>
+                                        <TextBlock Text="Instalar driver e configurações" FontSize="15" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Instalação normal ou enxuta; nas duas, as configurações marcadas abaixo são aplicadas logo depois" Foreground="{DynamicResource Muted}" FontSize="12"/>
                                     </StackPanel>
                                 </StackPanel>
                                 <TextBlock x:Name="GfxCardInfo" Visibility="Collapsed" Foreground="{DynamicResource AccentCyan}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,10"/>
-                                <WrapPanel x:Name="GfxNvInstallRow" Margin="0,0,0,8">
-                                    <Button x:Name="BtnGfxNvInstall" Style="{StaticResource PrimaryButton}" Content="Instalar driver NVIDIA (silencioso e limpo)" Padding="16,8" Margin="0,0,10,6" Click="BtnGfxNvInstall_Click"
-                                            ToolTip="Baixa o driver oficial, confere a assinatura e instala sem telas, apagando as configurações antigas do driver (como o script)"/>
+
+                                <TextBlock Text="INSTALAÇÃO" Style="{StaticResource Label}" Margin="0,4,0,8"/>
+                                <WrapPanel Margin="0,0,0,8">
+                                    <RadioButton x:Name="InstNormal" Style="{StaticResource Chip}" GroupName="InstMode" Content="Normal (driver completo)" IsChecked="True" Checked="InstMode_Changed"/>
+                                    <RadioButton x:Name="InstDebloat" Style="{StaticResource Chip}" GroupName="InstMode" Content="Enxuta (debloat)" Checked="InstMode_Changed"/>
+                                </WrapPanel>
+                                <TextBlock x:Name="InstModeHelp" Foreground="{DynamicResource Muted}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,8"
+                                           Text="Driver oficial com assinatura conferida, instalado sem telas e do zero (apaga as configurações antigas do driver)."/>
+                                <StackPanel x:Name="InstDebloatPanel" Visibility="Collapsed">
+                                    <TextBlock x:Name="DebloatNo7z" Visibility="Collapsed" Foreground="{DynamicResource TempWarn}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,8">
+                                        Precisa do 7-Zip para abrir o pacote do driver. <Hyperlink Click="BtnDebloat7z_Click">Instalar o 7-Zip (winget)</Hyperlink>
+                                    </TextBlock>
+                                    <StackPanel x:Name="DebloatRows"/>
+                                </StackPanel>
+                                <WrapPanel Margin="0,4,0,0">
+                                    <Button x:Name="BtnDebloatLatest" Style="{StaticResource PrimaryButton}" Content="Baixar o driver NVIDIA mais recente e instalar" Padding="16,8" Margin="0,0,10,8" Click="BtnInstLatest_Click"/>
+                                    <Button x:Name="BtnDebloatFile" Style="{StaticResource OutlineButton}" Content="Escolher o instalador…" Padding="14,8" Margin="0,0,10,8" Click="BtnInstFile_Click"
+                                            ToolTip="Use um instalador de driver NVIDIA, AMD ou Intel que você já baixou"/>
+                                    <Button x:Name="BtnDebloatUndo" Style="{StaticResource OutlineButton}" Content="Desfazer as limpezas" Padding="14,8" Margin="0,0,10,8" Visibility="Collapsed" Click="BtnDebloatUndo_Click"
+                                            ToolTip="Reativa os serviços e as entradas de inicialização que a instalação enxuta desligou"/>
+                                </WrapPanel>
+                                <WrapPanel x:Name="GfxNvInstallRow" Margin="0,0,0,4">
                                     <Button Style="{StaticResource OutlineButton}" Content="Abrir Painel de Controle NVIDIA" Padding="14,8" Margin="0,0,10,6" Click="BtnGfxNvPanel_Click"
                                             ToolTip="Se ainda não estiver instalado, abre a página dele na Microsoft Store"/>
                                     <Button Style="{StaticResource OutlineButton}" Content="Atalho na Área de Trabalho" Padding="14,8" Margin="0,0,10,6" Click="BtnGfxNvShortcut_Click"
                                             ToolTip="Cria o atalho &quot;NVIDIA Control Panel&quot; na Área de Trabalho"/>
-                                    <TextBlock Foreground="{DynamicResource Faint}" FontSize="11.5" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="520">
-                                        AMD e Intel: use os botões de instalação no cartão PLACA DE VÍDEO e depois aplique as configurações abaixo.
-                                    </TextBlock>
                                 </WrapPanel>
+                                <TextBlock x:Name="DebloatStatus" Foreground="{DynamicResource Accent}" TextWrapping="Wrap" Margin="0,0,0,6"/>
+
+                                <TextBlock Text="CONFIGURAÇÕES (aplicadas depois de instalar, ou quando você clicar em Aplicar)" Style="{StaticResource Label}" Margin="0,10,0,0"/>
                                 <StackPanel x:Name="GfxRows" Margin="0,4,0,0"/>
                                 <WrapPanel Margin="0,8,0,0">
                                     <Button x:Name="BtnGfxApply" Style="{StaticResource PrimaryButton}" Content="Aplicar" Padding="18,8" Margin="0,0,10,8" Click="BtnGfxApply_Click"/>
@@ -914,34 +930,6 @@
                                     <Button x:Name="BtnGfxReboot" Style="{StaticResource OutlineButton}" Content="Reiniciar agora" Padding="14,8" Margin="0,0,10,8" Visibility="Collapsed" Click="BtnGfxReboot_Click"/>
                                 </WrapPanel>
                                 <TextBlock x:Name="GfxStatus" Foreground="{DynamicResource Accent}" TextWrapping="Wrap"/>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Instalação enxuta (Ultimate · 5 Graphics · 4 Driver Debloat Install & Settings) -->
-                        <Border Style="{StaticResource CardBorder}" Margin="0,0,0,14">
-                            <StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                    <Border Width="34" Height="34" CornerRadius="9" Background="{DynamicResource AccentGradient}" Margin="0,0,12,0">
-                                        <TextBlock Text="&#xE74D;" FontFamily="{StaticResource Icons}" FontSize="16" Foreground="{DynamicResource OnAccent}"
-                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                    </Border>
-                                    <StackPanel VerticalAlignment="Center">
-                                        <TextBlock Text="Instalação enxuta do driver (debloat)" FontSize="15" FontWeight="SemiBold"/>
-                                        <TextBlock Text="Instala só o driver, sem telemetria, apps e serviços extras. Marque o que deve sair" Foreground="{DynamicResource Muted}" FontSize="12"/>
-                                    </StackPanel>
-                                </StackPanel>
-                                <TextBlock x:Name="DebloatNo7z" Visibility="Collapsed" Foreground="{DynamicResource TempWarn}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,8">
-                                    Precisa do 7-Zip para abrir o pacote do driver. <Hyperlink Click="BtnDebloat7z_Click">Instalar o 7-Zip (winget)</Hyperlink>
-                                </TextBlock>
-                                <StackPanel x:Name="DebloatRows"/>
-                                <WrapPanel Margin="0,8,0,0">
-                                    <Button x:Name="BtnDebloatLatest" Style="{StaticResource PrimaryButton}" Content="Baixar o NVIDIA mais recente e instalar enxuto" Padding="16,8" Margin="0,0,10,8" Click="BtnDebloatLatest_Click"/>
-                                    <Button x:Name="BtnDebloatFile" Style="{StaticResource OutlineButton}" Content="Escolher o instalador…" Padding="14,8" Margin="0,0,10,8" Click="BtnDebloatFile_Click"
-                                            ToolTip="Use um instalador de driver NVIDIA, AMD ou Intel que você já baixou"/>
-                                    <Button x:Name="BtnDebloatUndo" Style="{StaticResource OutlineButton}" Content="Desfazer as limpezas" Padding="14,8" Margin="0,0,10,8" Visibility="Collapsed" Click="BtnDebloatUndo_Click"
-                                            ToolTip="Reativa os serviços e as entradas de inicialização que a instalação enxuta desligou"/>
-                                </WrapPanel>
-                                <TextBlock x:Name="DebloatStatus" Foreground="{DynamicResource Accent}" TextWrapping="Wrap"/>
                             </StackPanel>
                         </Border>
 

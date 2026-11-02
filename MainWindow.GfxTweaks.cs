@@ -216,39 +216,4 @@ public partial class MainWindow
         Process.Start(new ProcessStartInfo("shutdown.exe", "/r /t 5") { UseShellExecute = false, CreateNoWindow = true });
     }
 
-    /// <summary>Driver NVIDIA oficial (assinatura conferida) instalado em silêncio e do zero; depois, Painel de Controle e as configurações.</summary>
-    private async void BtnGfxNvInstall_Click(object sender, RoutedEventArgs e)
-    {
-        if (_gfxBusy || !RequireAdmin()) return;
-        var g = _drvGpus.FirstOrDefault(x => x.Vendor == "NVIDIA") ?? DriverManager.ReadGpus().FirstOrDefault(x => x.Vendor == "NVIDIA");
-        if (g == null) { GfxStatus.Text = "Nenhuma placa NVIDIA encontrada."; return; }
-        if (MessageBox.Show(this,
-                "Instalar o driver NVIDIA mais recente em modo silencioso e limpo?\n\n" +
-                "• Baixa do servidor oficial e confere a assinatura.\n• Instala sem telas; a imagem pisca algumas vezes.\n" +
-                "• \"Limpo\" apaga as configurações antigas do driver (aplique as recomendadas depois).\n• Não reinicia sozinho.",
-                "Driver NVIDIA", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
-        _gfxBusy = true;
-        BtnGfxNvInstall.IsEnabled = false;
-        try
-        {
-            if (g.DownloadUrl.Length == 0) { GfxStatus.Text = "Procurando o driver mais recente…"; await DriverManager.CheckNvidiaAsync(g, DrvStudio.IsChecked == true, CancellationToken.None); }
-            if (g.DownloadUrl.Length == 0) { GfxStatus.Text = g.Message; return; }
-            string file = await DriverManager.DownloadAsync(g, (t, _) => GfxStatus.Text = t, CancellationToken.None);
-            GfxStatus.Text = $"Instalando o driver {g.Latest} em silêncio… (pode levar alguns minutos; a tela vai piscar)";
-            int code = await GraphicsTweaks.InstallNvidiaSilentAsync(file, CancellationToken.None);
-            string panel = "";
-            if (!GraphicsTweaks.HasNvidiaControlPanel())
-            {
-                try { Process.Start(new ProcessStartInfo(GraphicsTweaks.NvidiaControlPanelStore) { UseShellExecute = true }); } catch { }
-                panel = " A página do Painel de Controle NVIDIA na Microsoft Store foi aberta: clique em Obter.";
-            }
-            string settings = "";
-            if (code == 0) { GfxStatus.Text = $"Driver {g.Latest} instalado. Aplicando as configurações marcadas…"; settings = " " + await ApplyAfterInstallAsync(); }
-            GfxStatus.Text = (code == 0 ? $"Driver {g.Latest} instalado." : $"O instalador terminou com o código {code}; confira se o driver aparece no Gerenciador de Dispositivos.")
-                             + settings + panel + " Reinicie para terminar. " + GpuDriverStatus.NvidiaAppTips;
-            BtnGfxReboot.Visibility = Visibility.Visible;
-        }
-        catch (Exception ex) { GfxStatus.Text = "Não foi possível instalar: " + ex.Message; }
-        finally { _gfxBusy = false; BtnGfxNvInstall.IsEnabled = true; }
-    }
 }

@@ -19,6 +19,7 @@ A numeração segue **SemVer** (`MAJOR.MINOR.PATCH`). Regras e processo em [docs
   - Botões **Abrir Painel de Controle NVIDIA** (sem ele instalado, abre a página na Microsoft Store em vez de instalar um .appx de espelho) e **Atalho na Área de Trabalho**.
   - **Perfil global NVIDIA no padrão do driver** (a opção "Default" do script), com aviso de que tira tudo o que foi mudado no perfil global e não tem desfazer.
   - O Profile Inspector separado do script não é baixado: o app já tem o seu.
+- **Drivers · um cartão só para instalar o driver**: escolha **Normal** (driver completo, silencioso e limpo) ou **Enxuta (debloat)**; nas duas, as configurações marcadas no mesmo cartão (Painel NVIDIA/Profile Inspector, registro e Windows) são **aplicadas logo depois de instalar**, como no script. Ajustes que a reinstalação do driver desfez deixam de aparecer como APLICADO e voltam marcados para aplicar de novo. A limpeza com o DDU agora só faz a parte dela (não baixa mais o driver NVIDIA), corrige a segunda tentativa (Settings.xml somente leitura), usa o 7-Zip se o instalador do DDU não extrair sozinho e guarda o registro de cada etapa em `%LocalAppData%PcismoMasterddu-log.txt`.
 - **Drivers · Instalação enxuta do driver (debloat)** (o "5 Graphics/4 Driver Debloat Install & Settings" do Ultimate; os ajustes do script já estão no cartão de configurações recomendadas):
   - NVIDIA: abre o pacote com o 7-Zip, tira os componentes marcados (telemetria, NVIDIA App, ShadowPlay, containers, nView, FrameView…) e instala em silêncio e limpo. Baixa o mais recente (assinatura conferida) ou usa um instalador seu.
   - AMD e Intel: instalador escolhido por você (assinatura da AMD/Intel conferida, fabricante detectado pelo pacote), extras desligados no pacote e limpezas depois de instalar.
@@ -40,7 +41,6 @@ A numeração segue **SemVer** (`MAJOR.MINOR.PATCH`). Regras e processo em [docs
 - **Drivers · Limpeza completa do driver de vídeo (DDU)** (versão do PcismoMaster do "5 Graphics/1 Driver Clean" do Ultimate):
   - Modos **Automático** (o DDU limpa sozinho no modo de segurança e o PC reinicia normal) e **Manual** (abre o DDU no modo de segurança); escolha da placa (NVIDIA, AMD, Intel ou todas).
   - Baixa o instalador oficial do DDU e **confere a assinatura da Wagnardsoft**; extrai sem precisar do 7-Zip (o script original falhava sem ele). Também aceita um DDU baixado por você.
-  - Opcional e recomendado: **baixar antes o driver NVIDIA mais recente**; depois da limpeza aparece o botão para instalá-lo, mesmo sem internet.
   - Ponto de restauração, **tudo preparado e conferido antes de mexer no boot**, atalho de emergência "Sair do modo de segurança" na Área de Trabalho e reinício com **contagem regressiva e Cancelar** (desfaz o modo de segurança).
   - Bloqueio do driver automático do Windows Update **com botão para desfazer** (o script deixava permanente). Remover áudio Realtek/Sound Blaster virou opção, **desligada por padrão**.
 - **FERRAMENTAS · Drivers ganhou sub-abas**: **Drivers** (o que já existia, sem mudanças) e o novo **Profile Inspector**.

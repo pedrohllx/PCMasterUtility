@@ -14,7 +14,7 @@ public partial class MainWindow
     private string? _dduLocalSetup;
     private DispatcherTimer? _dduCountdown;
 
-    /// <summary>Estado do cartão ao abrir a aba: GPU sugerida, bloqueio do Windows Update e driver baixado.</summary>
+    /// <summary>Estado do cartão ao abrir a aba: GPU sugerida e bloqueio do Windows Update.</summary>
     private void InitDdu()
     {
         if (!_dduInit)
@@ -24,13 +24,8 @@ public partial class MainWindow
                 : _gpus.Any(g => g.Name.Contains("AMD", StringComparison.OrdinalIgnoreCase) || g.Name.Contains("Radeon", StringComparison.OrdinalIgnoreCase)) ? "amd"
                 : _gpus.Any(g => g.Name.Contains("Intel", StringComparison.OrdinalIgnoreCase)) ? "intel" : "all";
             foreach (var rb in DduGpuPanel.Children.OfType<RadioButton>()) rb.IsChecked = (string)rb.Tag == vendor;
-            DduPreDownload.IsEnabled = vendor == "nvidia";
-            DduPreDownload.IsChecked = vendor == "nvidia";
         }
         BtnDduWuRestore.Visibility = _settings.DduWuBlocked ? Visibility.Visible : Visibility.Collapsed;
-        BtnDduInstall.Visibility = _settings.DduDriverFile is string f && File.Exists(f) ? Visibility.Visible : Visibility.Collapsed;
-        if (BtnDduInstall.Visibility == Visibility.Visible)
-            DduStatus.Text = "Limpeza feita. Instale o driver baixado antes da limpeza (botão acima) ou use VERIFICAR TUDO para baixar o mais recente.";
     }
 
     private void DduLogLine(string s)
@@ -53,12 +48,12 @@ public partial class MainWindow
         var o = new DduOptions(DduAuto.IsChecked == true, CheckedTag(DduGpuPanel) ?? "all", DduAudio.IsChecked == true, DduBlockWu.IsChecked == true);
         string gpuText = o.Gpus switch { "nvidia" => "o driver NVIDIA", "amd" => "o driver AMD", "intel" => "o driver Intel", _ => "os drivers de todas as placas de vídeo" };
         string ask = $"Limpar {gpuText} com o DDU?\n\n" +
-                     "1. O PcismoMaster baixa e confere o DDU" + (DduPreDownload.IsChecked == true ? " e o driver NVIDIA mais recente" : "") + ".\n" +
+                     "1. O PcismoMaster baixa e confere o DDU.\n" +
                      "2. Cria um ponto de restauração.\n" +
                      "3. Reinicia no MODO DE SEGURANÇA (feche e salve tudo antes).\n" +
                      (o.Auto ? "4. Ao entrar com sua conta, o DDU limpa sozinho e o PC reinicia normal, sem driver de vídeo.\n"
                              : "4. Ao entrar com sua conta, o DDU abre: escolha a placa e clique em \"Clean and restart\".\n") +
-                     "5. Depois, instale o driver de novo." +
+                     "5. Depois, instale o driver no cartão \"Instalar driver e configurações\"." +
                      (o.Audio ? "\n\nVocê marcou remover o áudio Realtek/Sound Blaster: o PC fica sem som até reinstalar o driver de áudio." : "") +
                      "\n\nSe a limpeza não começar no modo de segurança, use o atalho \"Sair do modo de segurança (PcismoMaster)\" na Área de Trabalho.";
         if (MessageBox.Show(this, ask, "Limpeza do driver de vídeo", MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK) return;
@@ -71,35 +66,12 @@ public partial class MainWindow
         bool scheduled = false;
         try
         {
-            // 1) Driver novo baixado antes (opcional): sem ele, o PC fica sem driver até ter internet e baixar de novo.
             L.Report($"Início: {(o.Auto ? "automático" : "manual")}, placas: {o.Gpus}, áudio: {o.Audio}, bloquear Windows Update: {o.BlockWu}.");
-            if (DduPreDownload.IsChecked == true && o.Gpus is "nvidia" or "all")
-            {
-                // Falhar aqui não impede a limpeza: o driver pode ser baixado depois.
-                try
-                {
-                    var g = _drvGpus.FirstOrDefault(x => x.Vendor == "NVIDIA") ?? await Task.Run(() => DriverManager.ReadGpus().FirstOrDefault(x => x.Vendor == "NVIDIA"));
-                    if (g != null)
-                    {
-                        if (g.DownloadUrl.Length == 0) { L.Report("Procurando o driver NVIDIA mais recente…"); await DriverManager.CheckNvidiaAsync(g, false, CancellationToken.None); }
-                        if (g.DownloadUrl.Length > 0)
-                        {
-                            L.Report($"Baixando o driver NVIDIA {g.Latest} (pode levar alguns minutos)…");
-                            string file = await DriverManager.DownloadAsync(g, (t, _) => DduStatus.Text = t, CancellationToken.None);
-                            _settings.DduDriverFile = file; _settings.Save();
-                            L.Report($"Driver NVIDIA {g.Latest} baixado: {file}");
-                        }
-                        else L.Report("Não achei o driver NVIDIA mais recente agora; depois use VERIFICAR TUDO.");
-                    }
-                }
-                catch (Exception ex) { L.Report("Não deu para baixar o driver antes (" + ex.Message + "); a limpeza continua, baixe depois."); }
-            }
-
-            // 2) DDU baixado, conferido, extraído e configurado.
+            // 1) DDU baixado, conferido, extraído e configurado.
             DduStatus.Text = "Preparando o DDU…";
             string exe = await Task.Run(() => DriverClean.PrepareAsync(o, _dduLocalSetup, s => L.Report(s), CancellationToken.None));
 
-            // 3) Ponto de restauração.
+            // 2) Ponto de restauração.
             DduStatus.Text = "Criando o ponto de restauração (até 3 minutos)…";
             using var rpCts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
             var ctx = new Maintenance.Ctx(log, rpCts.Token);
@@ -114,7 +86,7 @@ public partial class MainWindow
                 return;
             }
 
-            // 4) Windows Update: guarda o valor atual uma vez, para o botão de desfazer.
+            // 3) Windows Update: guarda o valor atual uma vez, para o botão de desfazer.
             if (o.BlockWu)
             {
                 if (!_settings.DduWuBlocked) { _settings.DduWuBackup = DriverClean.ReadWuSearchOrder(); _settings.DduWuBlocked = true; _settings.Save(); }
@@ -122,7 +94,7 @@ public partial class MainWindow
                 L.Report("Windows Update não vai instalar driver de vídeo sozinho (dá para liberar depois).");
             }
 
-            // 5) Modo de segurança + reinício com contagem regressiva.
+            // 4) Modo de segurança + reinício com contagem regressiva.
             DduStatus.Text = "Programando o modo de segurança…";
             await Task.Run(() => DriverClean.ScheduleSafeMode(o, exe));
             scheduled = true;
@@ -185,32 +157,4 @@ public partial class MainWindow
         InitDdu();
     }
 
-    /// <summary>Instala o driver baixado antes da limpeza (silencioso e limpo) e já aplica as configurações marcadas.</summary>
-    private async void BtnDduInstall_Click(object sender, RoutedEventArgs e)
-    {
-        if (_settings.DduDriverFile is not string f || !File.Exists(f)) { InitDdu(); return; }
-        if (_gfxBusy || !RequireAdmin()) return;
-        _gfxBusy = true;
-        BtnDduInstall.IsEnabled = false;
-        try
-        {
-            DduStatus.Text = "Instalando o driver em silêncio… (pode levar alguns minutos; a tela vai piscar)";
-            int code = await GraphicsTweaks.InstallNvidiaSilentAsync(f, CancellationToken.None);
-            _settings.DduDriverFile = null; _settings.Save();
-            BtnDduInstall.Visibility = Visibility.Collapsed;
-            string settings = "";
-            if (code == 0) { DduStatus.Text = "Driver instalado. Aplicando as configurações marcadas…"; settings = " " + await ApplyAfterInstallAsync(); }
-            string panel = "";
-            if (!GraphicsTweaks.HasNvidiaControlPanel())
-            {
-                try { Process.Start(new ProcessStartInfo(GraphicsTweaks.NvidiaControlPanelStore) { UseShellExecute = true }); } catch { }
-                panel = " A página do Painel de Controle NVIDIA na Microsoft Store foi aberta: clique em Obter.";
-            }
-            DduStatus.Text = (code == 0 ? "Driver instalado." : $"O instalador terminou com o código {code}; confira o driver no Gerenciador de Dispositivos.")
-                             + settings + panel + " Reinicie para terminar.";
-            BtnGfxReboot.Visibility = Visibility.Visible;
-        }
-        catch (Exception ex) { DduStatus.Text = "Não foi possível instalar: " + ex.Message; }
-        finally { _gfxBusy = false; BtnDduInstall.IsEnabled = true; }
-    }
 }
