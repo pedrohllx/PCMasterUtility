@@ -37,6 +37,11 @@ public partial class MainWindow
         try
         {
             var m = UpdateModule();
+            if (restore && !updateEngine.HasBackup(m))
+            {
+                MessageBox.Show(this, "Não há nada para restaurar: o PcismoMaster ainda não pausou o Windows Update neste PC.", "Windows Update", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
             var label = restore ? "Restaurar configuração anterior" : "Pausar por 365 dias";
             if (MessageBox.Show(this, label + "? A pausa inclui correções de segurança. Restaurar recupera os valores anteriores, que também podem conter uma pausa.", "Windows Update", MessageBoxButton.OKCancel) != MessageBoxResult.OK) return;
             if (restore) updateEngine.Restore(m); else updateEngine.Enable(m);

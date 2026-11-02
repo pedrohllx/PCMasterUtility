@@ -1,5 +1,11 @@
 # Histórico de versões
 
+## 0.2.3
+
+- Corrigido o erro "Could not find a part of the path ...\ModuleBackups\updates-pause.json" ao clicar em **Restaurar configuração anterior** no Windows Update sem ter pausado antes. Agora aparece um aviso de que não há nada para restaurar, e nenhum valor é alterado.
+- O motor de backup recusa restaurar sem backup com uma mensagem clara, coberta por um novo teste automático.
+- Versão atualizada para 0.2.3.
+
 ## 0.2.2
 
 - Removidas as ferramentas Background Apps e Store Settings da aba OTIMIZAÇÃO, junto com o script `Scripts/StoreSettings.ps1`. Fica somente a pausa do Windows Update.

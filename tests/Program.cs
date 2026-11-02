@@ -41,6 +41,11 @@ Test("Corrupted journal fails closed", () => {
     File.WriteAllText(Path.Combine(temp, "corrupt", module.Id + ".json"), "{}");
     Throws(() => engine.Restore(module)); Assert(fake.Writes == writes); Assert(engine.HasBackup(module));
 });
+Test("Restore without backup fails clearly and writes nothing", () => {
+    var engine = Engine("never-created"); var writes = fake.Writes;
+    try { engine.Restore(module); throw new Exception("Expected failure"); } catch (InvalidOperationException) { }
+    Assert(fake.Writes == writes); Assert(!engine.HasBackup(module));
+});
 Test("Real registry roundtrip only inside isolated test key", () => {
     var path = @"Software\PcismoMaster.Tests\" + Guid.NewGuid();
     var setting = new Setting("HKCU", path, "Sample", 0); var store = new RegistryStore();

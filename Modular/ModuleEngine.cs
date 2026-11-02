@@ -56,6 +56,7 @@ public sealed class ModuleEngine(ISettingsStore store, string directory)
     {
         lock (gate)
         {
+            if (!HasBackup(module)) throw new InvalidOperationException("Não há backup para restaurar: este ajuste não foi aplicado pelo PcismoMaster.");
             var snapshot = JsonSerializer.Deserialize<Snapshot>(File.ReadAllText(FileFor(module)))
                 ?? throw new IOException("Backup inválido.");
             if (snapshot.ModuleId != module.Id || !snapshot.Settings.SequenceEqual(module.Settings) || snapshot.Before.Length != module.Settings.Length)
