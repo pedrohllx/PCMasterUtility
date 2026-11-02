@@ -139,42 +139,74 @@ public partial class MainWindow
         var pw = _oc.Power;
         var tl = _oc.TempLimit;
         bool nvapi = _oc.NvApiGpu != IntPtr.Zero;
-        Row("volt", "CORE VOLTAGE (%)", 0, 100, nvapi, v => P.VoltagePercent = v, () => P.VoltagePercent, signed: false);
-        Row("power", "POWER LIMIT (%)", pw is { } a ? (int)Math.Ceiling(a.MinW * 100.0 / a.DefaultW) : 100, pw is { } b ? (int)(b.MaxW * 100.0 / b.DefaultW) : 100,
-            pw != null, v => P.PowerPercent = v, () => P.PowerPercent, signed: false);
-        Row("temp", "TEMP. LIMIT (°C)", tl?.Min ?? 0, tl?.Max ?? 100, tl != null, v => P.TempLimitC = v, () => P.TempLimitC ?? tl?.Current ?? 83, signed: false);
-        Row("core", "CORE CLOCK (MHz)", _oc.CoreRangeMhz.Min, _oc.CoreRangeMhz.Max, nvapi, v => { P.CoreOffsetMhz = v; DrawVf(); }, () => P.CoreOffsetMhz, signed: true);
-        Row("mem", "MEMORY CLOCK (MHz)", _oc.MemRangeMhz.Min, _oc.MemRangeMhz.Max, nvapi, v => P.MemOffsetMhz = v, () => P.MemOffsetMhz, signed: true);
-        var fanRow = Row("fan", "FAN SPEED (%)", (int)_oc.FanRange.Min, (int)_oc.FanRange.Max, _oc.Fans > 0, v => P.FanFixedPercent = v, () => P.FanFixedPercent, signed: false);
-        _ocFanAuto = new CheckBox { Content = "AUTO", IsChecked = P.FanAuto, IsEnabled = _oc.Fans > 0, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) };
+        // Blocos do Afterburner: Clock (Mem | Core), Voltage (Core + Curve Editor) e Fan (Fan speed | Temp Limit + Power Limit).
+        var mem = Cell("mem", "Mem (MHz)", _oc.MemRangeMhz.Min, _oc.MemRangeMhz.Max, nvapi, v => P.MemOffsetMhz = v, () => P.MemOffsetMhz, signed: true);
+        var core = Cell("core", "Core (MHz)", _oc.CoreRangeMhz.Min, _oc.CoreRangeMhz.Max, nvapi, v => { P.CoreOffsetMhz = v; DrawVf(); }, () => P.CoreOffsetMhz, signed: true);
+        Section("Clock", mem, core);
+
+        var volt = new StackPanel();
+        volt.Children.Add(Cell("volt", "Core (%)", 0, 100, nvapi, v => P.VoltagePercent = v, () => P.VoltagePercent, signed: false));
+        var curveBtn = new Button { Content = "Curve Editor", Style = (Style)FindResource("OutlineButton"), Padding = new Thickness(16, 7, 16, 7), HorizontalAlignment = HorizontalAlignment.Right,
+            Margin = new Thickness(0, 4, 0, 0), ToolTip = "Editor da curva tensão/frequência (Ctrl+F)", IsEnabled = _oc.CurveSupported };
+        curveBtn.Click += BtnOcCurveEditor_Click;
+        volt.Children.Add(curveBtn);
+        Section("Voltage", null, volt);
+
+        var fan = new StackPanel();
+        fan.Children.Add(Cell("fan", "Fan speed (%)", (int)_oc.FanRange.Min, (int)_oc.FanRange.Max, _oc.Fans > 0, v => P.FanFixedPercent = v, () => P.FanFixedPercent, signed: false));
+        _ocFanAuto = new CheckBox { Content = "Auto", IsChecked = P.FanAuto, IsEnabled = _oc.Fans > 0, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 2, 0, 0) };
         _ocFanAuto.Checked += (_, _) => { P.FanAuto = true; UpdateFanSliderState(); };
         _ocFanAuto.Unchecked += (_, _) => { P.FanAuto = false; UpdateFanSliderState(); };
-        Grid.SetColumn(_ocFanAuto, 3);
-        fanRow.Children.Add(_ocFanAuto);
+        fan.Children.Add(_ocFanAuto);
+        var limits = new StackPanel();
+        limits.Children.Add(Cell("temp", "Temp Limit (°C)", tl?.Min ?? 0, tl?.Max ?? 100, tl != null, v => P.TempLimitC = v, () => P.TempLimitC ?? tl?.Current ?? 83, signed: false));
+        limits.Children.Add(Cell("power", "Power Limit (%)", pw is { } a ? (int)Math.Ceiling(a.MinW * 100.0 / a.DefaultW) : 100, pw is { } b ? (int)(b.MaxW * 100.0 / b.DefaultW) : 100,
+            pw != null, v => P.PowerPercent = v, () => P.PowerPercent, signed: false));
+        Section("Fan", fan, limits, last: true);
+
         UpdateFanSliderState();
         if (pw != null) _ocSliders["power"].Slider.ValueChanged += (_, _) => UpdatePowerHint();
         UpdatePowerHint();
 
-        Grid Row(string key, string label, int min, int max, bool enabled, Action<int> set, Func<int> get, bool signed)
+        void Section(string title, UIElement? left, UIElement right, bool last = false)
         {
-            var grid = new Grid { Margin = new Thickness(0, 0, 0, 10), IsEnabled = enabled, Opacity = enabled ? 1 : 0.4 };
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(190) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition());
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(96) });
+            var grid = new Grid { Margin = new Thickness(0, 0, 0, last ? 0 : 8) };
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(80) });
-            var name = new TextBlock { Text = label, Style = (Style)FindResource("Label"), VerticalAlignment = VerticalAlignment.Center };
-            var slider = new Slider { Minimum = min, Maximum = Math.Max(min, max), TickFrequency = 1, IsSnapToTickEnabled = true, VerticalAlignment = VerticalAlignment.Center, Value = Math.Clamp(get(), min, Math.Max(min, max)) };
-            var box = new TextBox { Margin = new Thickness(12, 0, 0, 0), FontFamily = (FontFamily)FindResource("Mono"), HorizontalContentAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
+            grid.ColumnDefinitions.Add(new ColumnDefinition());
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition());
+            grid.Children.Add(new TextBlock { Text = title, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 6, 0, 0) });
+            if (left != null) { Grid.SetColumn(left, 1); grid.Children.Add(left); }
+            Grid.SetColumn(right, 3); grid.Children.Add(right);
+            OcSliders.Children.Add(new Border
+            {
+                Child = grid, Padding = new Thickness(14, 10, 14, 10), CornerRadius = new CornerRadius(8),
+                Background = (Brush)FindResource("Bg"), BorderBrush = (Brush)FindResource("Line"), BorderThickness = new Thickness(1),
+                Margin = new Thickness(0, 0, 0, 8),
+            });
+        }
+
+        // "Mem (MHz)  +0  ──●──": nome, valor (dá para digitar) e slider, como uma linha do Afterburner.
+        Grid Cell(string key, string label, int min, int max, bool enabled, Action<int> set, Func<int> get, bool signed)
+        {
+            var grid = new Grid { Margin = new Thickness(0, 2, 0, 2), IsEnabled = enabled, Opacity = enabled ? 1 : 0.4 };
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(112) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(58) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition());
+            var name = new TextBlock { Text = label, Foreground = (Brush)FindResource("Muted"), FontSize = 12, VerticalAlignment = VerticalAlignment.Center };
+            var slider = new Slider { Minimum = min, Maximum = Math.Max(min, max), TickFrequency = 1, IsSnapToTickEnabled = true, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0), Value = Math.Clamp(get(), min, Math.Max(min, max)) };
+            var box = new TextBox { FontFamily = (FontFamily)FindResource("Mono"), FontSize = 12, Padding = new Thickness(4, 3, 4, 3), HorizontalContentAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
             string Format(double v) => signed ? $"{v:+0;-0;0}" : $"{v:0}";
             box.Text = Format(slider.Value);
             slider.ValueChanged += (_, e) => { box.Text = Format(e.NewValue); if (!_ocSyncing) set((int)e.NewValue); };
             void Commit() { if (int.TryParse(box.Text.Replace("+", ""), out int v)) slider.Value = Math.Clamp(v, slider.Minimum, slider.Maximum); box.Text = Format(slider.Value); }
             box.LostFocus += (_, _) => Commit();
+            // Clicar na caixa seleciona o valor todo, para digitar o novo por cima.
+            box.GotKeyboardFocus += (_, _) => box.Dispatcher.BeginInvoke(box.SelectAll, DispatcherPriority.Input);
             box.KeyDown += (_, e) => { if (e.Key == Key.Enter) Commit(); };
             slider.MouseRightButtonUp += (_, _) => slider.Value = Math.Clamp(signed ? 0 : slider.Value, slider.Minimum, slider.Maximum);
-            Grid.SetColumn(slider, 1); Grid.SetColumn(box, 2);
-            grid.Children.Add(name); grid.Children.Add(slider); grid.Children.Add(box);
-            OcSliders.Children.Add(grid);
+            Grid.SetColumn(box, 1); Grid.SetColumn(slider, 2);
+            grid.Children.Add(name); grid.Children.Add(box); grid.Children.Add(slider);
             _ocSliders[key] = (slider, box);
             return grid;
         }
