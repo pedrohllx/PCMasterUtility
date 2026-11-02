@@ -1,2 +1,2 @@
 @echo off
-start "" "%~dp0dist\PcismoMaster.exe"
+start "" "%~dp0dist-v0.2.0\PcismoMaster.exe"

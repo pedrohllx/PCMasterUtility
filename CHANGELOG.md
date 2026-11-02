@@ -1,5 +1,11 @@
 # Histórico de versões
 
+## 0.2.0
+
+- Sub-abas verticais Updates Pause, Background Apps e Store Settings dentro de OTIMIZAÇÃO.
+- Background Apps com backup e restauração individual.
+- Store Settings executa o script Ultimate com seleção pela interface; redefinição não equivale a backup. Efeitos na Store ainda requerem validação manual.
+
 ## 0.1.0
 
 - Primeira versão PcismoMaster derivada do ResetExplode, com identidade própria e licenças preservadas.
