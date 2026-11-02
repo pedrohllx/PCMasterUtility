@@ -4,6 +4,12 @@ A numeração segue **SemVer** (`MAJOR.MINOR.PATCH`). Regras e processo em [docs
 
 ## Em desenvolvimento
 
+- **Drivers · Instalar driver atualizado** (o "5 Graphics/2 Driver Updated Install" do Ultimate, aproveitando o que a aba já fazia):
+  - A placa de vídeo é reconhecida **mesmo sem driver** (pelo código PCI do fabricante), como logo depois da limpeza com o DDU; antes ela sumia da lista e não dava para instalar.
+  - Novos botões **Instalar o driver mais recente de: NVIDIA · AMD · Intel** para escolher o fabricante à mão.
+  - NVIDIA: se o modelo não for identificado, consulta o driver GeForce unificado mais recente (a mesma consulta do Ultimate); download oficial com assinatura conferida.
+  - AMD: sem modelo reconhecido, procura o instalador que detecta a placa sozinho; se o site não entregar o link, oferece a página oficial.
+  - Intel: abre a lista de drivers gráficos para Windows 11. Depois de instalar o driver NVIDIA, dicas do NVIDIA App (desligar Estatísticas, Filtros de jogo e otimização automática).
 - **Drivers · Limpeza completa do driver de vídeo (DDU)** (versão do PcismoMaster do "5 Graphics/1 Driver Clean" do Ultimate):
   - Modos **Automático** (o DDU limpa sozinho no modo de segurança e o PC reinicia normal) e **Manual** (abre o DDU no modo de segurança); escolha da placa (NVIDIA, AMD, Intel ou todas).
   - Baixa o instalador oficial do DDU e **confere a assinatura da Wagnardsoft**; extrai sem precisar do 7-Zip (o script original falhava sem ele). Também aceita um DDU baixado por você.

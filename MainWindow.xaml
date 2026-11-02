@@ -894,9 +894,17 @@
                                     <Button x:Name="BtnDrvInstall" Style="{StaticResource PrimaryButton}" Content="BAIXAR E INSTALAR" Padding="18,8" Margin="0,0,10,8" Click="BtnDrvInstall_Click" IsEnabled="False"/>
                                     <Button x:Name="BtnDrvGpuPage" Style="{StaticResource OutlineButton}" Content="ABRIR PÁGINA OFICIAL" Padding="18,8" Margin="0,0,10,8" Click="BtnDrvGpuPage_Click"/>
                                 </WrapPanel>
+                                <!-- Escolher o fabricante à mão (ex.: logo depois do DDU, quando o Windows ainda não reconhece a placa) -->
+                                <WrapPanel Margin="0,2,0,8">
+                                    <TextBlock Text="INSTALAR O DRIVER MAIS RECENTE DE" Style="{StaticResource Label}" VerticalAlignment="Center" Margin="0,0,10,6"/>
+                                    <Button Style="{StaticResource OutlineButton}" Content="NVIDIA" Tag="NVIDIA" Padding="14,6" Margin="0,0,8,6" Click="BtnDrvVendor_Click"/>
+                                    <Button Style="{StaticResource OutlineButton}" Content="AMD" Tag="AMD" Padding="14,6" Margin="0,0,8,6" Click="BtnDrvVendor_Click"/>
+                                    <Button Style="{StaticResource OutlineButton}" Content="Intel" Tag="Intel" Padding="14,6" Margin="0,0,8,6" Click="BtnDrvVendor_Click"/>
+                                </WrapPanel>
                                 <TextBlock Foreground="{DynamicResource Faint}" FontSize="11" TextWrapping="Wrap">
                                     NVIDIA: o instalador é baixado do servidor oficial, a assinatura digital é conferida e um ponto de restauração é criado antes de abrir.
-                                    AMD: o programa procura o instalador na página oficial do seu modelo (RX série 4000 a 9000); se o site bloquear, use ABRIR PÁGINA OFICIAL. Intel: só a página oficial.
+                                    AMD: o programa procura o instalador na página oficial do seu modelo (RX série 4000 a 9000) ou o instalador que detecta a placa sozinho; se o site bloquear, use ABRIR PÁGINA OFICIAL. Intel: abre a lista de drivers gráficos para Windows 11.
+                                    Sem driver de vídeo (por exemplo, depois da limpeza com o DDU), a placa ainda é reconhecida; se não for, escolha o fabricante acima.
                                 </TextBlock>
                             </StackPanel>
                         </Border>
