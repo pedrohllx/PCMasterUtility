@@ -143,17 +143,26 @@ public static class Maintenance
     public static async Task<string?> CreateRestorePoint(Ctx c, string title)
     {
         c.Line("Criando ponto de restauração…");
-        var sb = new StringBuilder();
+        var lines = new List<string>();
         string desc = ("PcismoMaster - " + title).Replace("'", "");
-        string script = $"try {{ Checkpoint-Computer -Description '{desc}' -RestorePointType MODIFY_SETTINGS -WarningAction Stop -ErrorAction Stop; 'OK' }} catch {{ 'FALHA: ' + $_.Exception.Message }}";
-        await Run(Ps, Args(script), Encoding.UTF8, new Progress<string>(s => sb.AppendLine(s)), c.Ct);
-        string outText = sb.ToString().Trim();
-        if (outText.EndsWith("OK")) { c.Line("Ponto de restauração criado."); return null; }
-        string why = outText.Replace("FALHA: ", "");
-        if (why.Contains("1440") || why.Contains("24")) why = "o Windows já criou um ponto de restauração nas últimas 24 horas (limite do próprio Windows)";
-        else if (why.Contains("disabled", StringComparison.OrdinalIgnoreCase) || why.Contains("desativad", StringComparison.OrdinalIgnoreCase))
-            why = "a Proteção do Sistema está desligada no disco C:";
+        // Sem barra de progresso (o PowerShell a manda como texto CLIXML misturado à saída) e conferindo na lista
+        // de pontos do Windows se o novo existe — o Checkpoint-Computer às vezes só avisa, sem erro, quando não cria.
+        string script =
+            "$ProgressPreference='SilentlyContinue'; $before=(Get-Date).AddMinutes(-2); $msg='';" +
+            $"try {{ Checkpoint-Computer -Description '{desc}' -RestorePointType MODIFY_SETTINGS -ErrorAction Stop -WarningVariable w -WarningAction SilentlyContinue; $msg=($w -join ' ') }} catch {{ $msg=$_.Exception.Message }};" +
+            "$new = Get-ComputerRestorePoint -ErrorAction SilentlyContinue | Where-Object { $_.ConvertToDateTime($_.CreationTime) -ge $before };" +
+            "if ($new) { 'RP-OK' } else { 'RP-FALHA: ' + $msg }";
+        await Run(Ps, Args(script), Encoding.UTF8, new Progress<string>(s => { lock (lines) lines.Add(s.Trim()); }), c.Ct);
+        string? result;
+        lock (lines) result = lines.LastOrDefault(l => l.StartsWith("RP-"));
+        if (result == "RP-OK") { c.Line("Ponto de restauração criado."); return null; }
+        string why = result?.Replace("RP-FALHA:", "").Trim() is { Length: > 0 } m ? m : "o Windows não informou o motivo";
+        if (why.Contains("1440")) why = "o Windows já criou um ponto de restauração nas últimas 24 horas (limite do próprio Windows)";
+        else if (why.Contains("disabled", StringComparison.OrdinalIgnoreCase) || why.Contains("desativad", StringComparison.OrdinalIgnoreCase)
+                 || why.Contains("desabilitad", StringComparison.OrdinalIgnoreCase))
+            why = "a Proteção do Sistema está desligada no disco C: (ative em Configurações → Sistema → Sobre → Proteção do sistema)";
         c.Line("Ponto de restauração não criado: " + why);
+        lock (lines) foreach (var l in lines.Where(l => !l.StartsWith("RP-") && l.Length > 0).Take(8)) c.Line("  " + l);
         return why;
     }
 
