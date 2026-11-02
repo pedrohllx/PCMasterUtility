@@ -9,3 +9,5 @@ A central separada foi retirada do fluxo. Licenças e créditos preservados em L
 OTIMIZAÇÃO contém a página Inicialização do Windows, com o ajuste Windows Update. A pausa deriva do Ultimate (licença MIT em licenses).
 
 A aba Overclock (DESEMPENHO) funciona como o MSI Afterburner em placas NVIDIA: sliders de Core Voltage, Power Limit, Temp. Limit, Core Clock, Memory Clock e Fan Speed, editor da curva V/F com undervolt, curva de fans, 5 perfis e monitoramento ao vivo. A camada NVAPI (curva V/F e offsets) foi portada do projeto [simple-nvidia-undervolt](https://github.com/vuplea/simple-nvidia-undervolt) (licença MIT em licenses/simple-nvidia-undervolt-LICENSE.txt).
+
+A aba Profile Inspector (FERRAMENTAS · Drivers) lê e grava os perfis do driver NVIDIA (DRS da NVAPI), como o [NVIDIA Profile Inspector](https://github.com/Orbmu2k/nvidiaProfileInspector). Os catálogos de configurações (Npi/CustomSettingNames.xml e Npi/Reference.xml) vêm desse projeto, licença MIT em licenses/nvidiaProfileInspector-LICENSE.txt.

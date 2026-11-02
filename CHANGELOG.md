@@ -2,6 +2,18 @@
 
 A numeração segue **SemVer** (`MAJOR.MINOR.PATCH`). Regras e processo em [docs/projeto/ATUALIZACOES.md](docs/projeto/ATUALIZACOES.md).
 
+## Em desenvolvimento
+
+- **FERRAMENTAS · Drivers ganhou sub-abas**: **Drivers** (o que já existia, sem mudanças) e o novo **Profile Inspector**.
+- **Profile Inspector** (no estilo do NVIDIA Profile Inspector): lê e grava os perfis do driver NVIDIA (DRS da NVAPI), o mesmo banco do Painel de Controle NVIDIA, inclusive o que o painel esconde.
+  - Lista de todos os perfis do driver (perfil global + milhares de jogos), com busca.
+  - Configurações agrupadas como no Profile Inspector (sincronia, antisserrilhado, texturas, DLSS/upscaling, energia etc.), com nome, valor editável (lista de valores conhecidos ou número em hexadecimal/decimal) e a origem de cada valor: **você**, **NVIDIA** (predefinido para o jogo), **global** (herdado) ou **padrão** do driver. Passe o mouse para ver a descrição e o ID.
+  - Alterações ficam pendentes (em amarelo) até **Aplicar alterações**; **Desfazer** descarta; ↺ tira a configuração do perfil (volta a herdar).
+  - **Restaurar padrão do perfil**, **Novo perfil…**, **Excluir perfil**, executáveis do perfil (adicionar/tirar) e **Exportar/Importar .nip** compatível com o Profile Inspector.
+  - Filtros: buscar configuração, **Só alteradas** e **Mostrar tudo** (configurações escondidas e as que o driver conhece sem nome).
+  - Catálogo de configurações do nvidiaProfileInspector (Orbmu2k, licença MIT, em `licenses/`).
+- Novo ComboBox escuro no tema do app.
+
 ## 0.5.0
 
 - **JOGOS · Biblioteca com novo visual**: cabeçalho com busca, **Adicionar jogo (.exe)…** e **Procurar de novo**; "Meus jogos" em **cartões com a capa** de cada jogo (a mesma da biblioteca da Steam; jogos sem capa ganham as iniciais no degradê do ícone), nome, loja e os botões **Preparar e jogar** e **Ajustes**.
