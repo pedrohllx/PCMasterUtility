@@ -1214,8 +1214,8 @@
                         <DataGrid x:Name="SensorGrid" AutoGenerateColumns="False" IsReadOnly="True"
                                   CanUserResizeColumns="True" CanUserSortColumns="False" MinRowHeight="22" FontSize="12.5"
                                   GridLinesVisibility="None" SelectionUnit="FullRow"
-                                  EnableRowVirtualization="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True"
-                                  VirtualizingPanel.VirtualizationMode="Standard" VirtualizingPanel.ScrollUnit="Pixel">
+                                  EnableRowVirtualization="True"
+                                  ScrollViewer.CanContentScroll="False">
                             <DataGrid.GroupStyle>
                                 <!-- Um bloco por dispositivo, com cabeçalho que recolhe e expande (como no HWiNFO) -->
                                 <GroupStyle>
