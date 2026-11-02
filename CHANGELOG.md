@@ -2,6 +2,19 @@
 
 A numeração segue **SemVer** (`MAJOR.MINOR.PATCH`). Regras e processo em [docs/projeto/ATUALIZACOES.md](docs/projeto/ATUALIZACOES.md).
 
+## 0.3.0
+
+- **Aba Overclock refeita no estilo do MSI Afterburner** (placas NVIDIA):
+  - **Sliders** de Core Voltage (%), Power Limit (%), Temp. Limit (°C), Core Clock (MHz), Memory Clock (MHz) e Fan Speed (%) com AUTO. Cada slider tem caixa para digitar o valor; botão direito no slider zera o offset. Botões **RESET** (padrão de fábrica) e **APLICAR**.
+  - **Curva V/F (Ctrl+F do Afterburner)**: gráfico de tensão × frequência com a curva de fábrica (cinza) e a editada (azul). Arraste um ponto para mudar o clock naquela tensão; Shift + arrastar move a curva inteira. **Undervolt**: botão direito num ponto deixa a curva plana a partir daquela tensão, com clock automático ou digitado. Mostra o ponto em uso agora.
+  - **Curva de fans** controlada pelo app: pontos arrastáveis, duplo clique cria ponto, botão direito apaga, histerese ajustável, temperatura e fan atuais no gráfico. Ao fechar o app, os fans voltam para o automático.
+  - **Monitoramento** dos últimos 2 minutos: GPU clock, memory clock, temperatura, consumo × limite (curva de potência), fan e voltagem, mais o que está limitando o clock (energia, temperatura etc.).
+  - **5 perfis** (SALVAR e escolher 1–5; clicar num perfil carrega e aplica) e opção de reaplicar os últimos ajustes ao abrir o PcismoMaster.
+- A camada NVAPI (curva V/F, offsets de clock e memória, tensão) foi portada do projeto **simple-nvidia-undervolt** (licença MIT, créditos em `licenses/`). Energia, temperatura e fans usam a NVML oficial.
+- O verificador de estabilidade e o guia de overclock na BIOS continuam na aba, abaixo dos novos controles.
+- Novos testes automáticos da curva V/F, do undervolt, da curva de fans e dos perfis (sem tocar na GPU).
+- Versão atualizada para 0.3.0.
+
 ## 0.2.5
 
 - Visão geral com mais cor:

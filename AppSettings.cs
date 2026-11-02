@@ -70,6 +70,12 @@ public sealed class AppSettings
     // Aparência
     public bool LightTheme { get; set; }
 
+    // Overclock (aba no estilo Afterburner): perfil em edição, 5 perfis salvos e o último aplicado (reaplicado ao abrir o app, se marcado)
+    public Modular.OcProfile OcCurrent { get; set; } = new();
+    public Modular.OcProfile?[] OcProfiles { get; set; } = new Modular.OcProfile?[5];
+    public Modular.OcProfile? OcApplied { get; set; }
+    public bool OcApplyOnStart { get; set; }
+
     // Overlay
     public string OverlayCorner { get; set; } = "TL";
     public double OverlayScale { get; set; } = 1.0;

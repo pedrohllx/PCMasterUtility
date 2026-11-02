@@ -87,6 +87,26 @@ internal static class Nvml
     };
 
     public static int SetPowerLimitMw(IntPtr h, uint mw) => Raw(() => nvmlDeviceSetPowerManagementLimit(h, mw));
+
+    // ---- Fans e temperatura (aba Overclock) ----
+    public const int TempThresholdAcousticMin = 4, TempThresholdAcousticCurr = 5, TempThresholdAcousticMax = 6;
+    [DllImport(Dll)] private static extern int nvmlDeviceGetNumFans(IntPtr device, out uint count);
+    [DllImport(Dll)] private static extern int nvmlDeviceGetFanSpeed_v2(IntPtr device, uint fan, out uint percent);
+    [DllImport(Dll)] private static extern int nvmlDeviceSetFanSpeed_v2(IntPtr device, uint fan, uint percent);
+    [DllImport(Dll)] private static extern int nvmlDeviceSetDefaultFanSpeed_v2(IntPtr device, uint fan);
+    [DllImport(Dll)] private static extern int nvmlDeviceGetMinMaxFanSpeed(IntPtr device, out uint min, out uint max);
+    [DllImport(Dll)] private static extern int nvmlDeviceGetTemperature(IntPtr device, int sensor, out uint temp);
+    [DllImport(Dll)] private static extern int nvmlDeviceGetTemperatureThreshold(IntPtr device, int type, out uint temp);
+    [DllImport(Dll)] private static extern int nvmlDeviceSetTemperatureThreshold(IntPtr device, int type, ref int temp);
+
+    public static uint FanCount(IntPtr h) { uint v = 0; return Call(() => nvmlDeviceGetNumFans(h, out v)) ? v : 0; }
+    public static uint? FanPercent(IntPtr h, uint fan) { uint v = 0; return Call(() => nvmlDeviceGetFanSpeed_v2(h, fan, out v)) ? v : null; }
+    public static int SetFanPercent(IntPtr h, uint fan, uint percent) => Raw(() => nvmlDeviceSetFanSpeed_v2(h, fan, percent));
+    public static int SetFanAuto(IntPtr h, uint fan) => Raw(() => nvmlDeviceSetDefaultFanSpeed_v2(h, fan));
+    public static (uint Min, uint Max)? FanRange(IntPtr h) { uint a = 0, b = 0; return Call(() => nvmlDeviceGetMinMaxFanSpeed(h, out a, out b)) ? (a, b) : null; }
+    public static uint? Temperature(IntPtr h) { uint v = 0; return Call(() => nvmlDeviceGetTemperature(h, 0, out v)) ? v : null; }
+    public static uint? TempThreshold(IntPtr h, int type) { uint v = 0; return Call(() => nvmlDeviceGetTemperatureThreshold(h, type, out v)) ? v : null; }
+    public static int SetTempThreshold(IntPtr h, int type, int celsius) => Raw(() => nvmlDeviceSetTemperatureThreshold(h, type, ref celsius));
     public static int LockGpuClocks(IntPtr h, uint min, uint max) => Raw(() => nvmlDeviceSetGpuLockedClocks(h, min, max));
     public static int ResetGpuClocks(IntPtr h) => Raw(() => nvmlDeviceResetGpuLockedClocks(h));
 
