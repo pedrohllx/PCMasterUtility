@@ -165,6 +165,35 @@ public static class GraphicsTweaks
 
     public static bool IsApplied(GfxTweak t) => Engine.HasBackup(ModuleFor(t));
 
+    /// <summary>
+    /// Reinstalar o driver (principalmente "limpo" ou depois do DDU) apaga os valores, mas o backup continua e o ajuste
+    /// apareceria como APLICADO sem estar. Se os valores não batem mais, o backup antigo é descartado (ele é de outro driver)
+    /// e o ajuste volta a "não aplicado". Devolve true quando descartou.
+    /// </summary>
+    public static bool DiscardIfStale(GfxTweak t)
+    {
+        var m = ModuleFor(t);
+        if (!Engine.HasBackup(m) || Engine.Matches(m)) return false;
+        File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PcismoMaster", "ModuleBackups", t.Id + ".json"));
+        return true;
+    }
+
+    /// <summary>O mesmo para o perfil global: se o driver novo não tem mais os valores aplicados, descarta o backup.</summary>
+    public static bool DiscardDrsIfStale(string id, (uint Id, uint Value, string Name)[] expected)
+    {
+        if (!DrsApplied(id) || !NvDrs.Available) return false;
+        var want = expected.ToDictionary(x => x.Id, x => x.Value);
+        var backup = JsonSerializer.Deserialize<List<DrsBackup>>(File.ReadAllText(DrsBackupFile(id))) ?? new();
+        bool stale = NvDrs.Session(s =>
+        {
+            IntPtr p = NvDrs.BaseProfile(s);
+            return backup.Any(b => want.TryGetValue(b.Id, out uint v)
+                                   && (NvDrs.Get(s, p, b.Id) is not { Location: DrsLocation.Current } cur || (uint)cur.Number != v));
+        });
+        if (stale) File.Delete(DrsBackupFile(id));
+        return stale;
+    }
+
     // ---------------- Perfil global da NVIDIA (o .nip do script) ----------------
 
     /// <summary>As configurações do .nip do script para o perfil global (sem o "Preferred OpenGL GPU" de uma RTX 4090).</summary>

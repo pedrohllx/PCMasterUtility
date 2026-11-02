@@ -185,16 +185,32 @@ public partial class MainWindow
         InitDdu();
     }
 
-    private void BtnDduInstall_Click(object sender, RoutedEventArgs e)
+    /// <summary>Instala o driver baixado antes da limpeza (silencioso e limpo) e já aplica as configurações marcadas.</summary>
+    private async void BtnDduInstall_Click(object sender, RoutedEventArgs e)
     {
         if (_settings.DduDriverFile is not string f || !File.Exists(f)) { InitDdu(); return; }
+        if (_gfxBusy || !RequireAdmin()) return;
+        _gfxBusy = true;
+        BtnDduInstall.IsEnabled = false;
         try
         {
-            Process.Start(new ProcessStartInfo(f) { UseShellExecute = true, WorkingDirectory = Path.GetDirectoryName(f) ?? "" });
-            DduStatus.Text = "Instalador do driver aberto. Siga as telas; a imagem pode piscar durante a instalação.";
+            DduStatus.Text = "Instalando o driver em silêncio… (pode levar alguns minutos; a tela vai piscar)";
+            int code = await GraphicsTweaks.InstallNvidiaSilentAsync(f, CancellationToken.None);
             _settings.DduDriverFile = null; _settings.Save();
             BtnDduInstall.Visibility = Visibility.Collapsed;
+            string settings = "";
+            if (code == 0) { DduStatus.Text = "Driver instalado. Aplicando as configurações marcadas…"; settings = " " + await ApplyAfterInstallAsync(); }
+            string panel = "";
+            if (!GraphicsTweaks.HasNvidiaControlPanel())
+            {
+                try { Process.Start(new ProcessStartInfo(GraphicsTweaks.NvidiaControlPanelStore) { UseShellExecute = true }); } catch { }
+                panel = " A página do Painel de Controle NVIDIA na Microsoft Store foi aberta: clique em Obter.";
+            }
+            DduStatus.Text = (code == 0 ? "Driver instalado." : $"O instalador terminou com o código {code}; confira o driver no Gerenciador de Dispositivos.")
+                             + settings + panel + " Reinicie para terminar.";
+            BtnGfxReboot.Visibility = Visibility.Visible;
         }
-        catch (Exception ex) { DduStatus.Text = "Não foi possível abrir o instalador: " + ex.Message; }
+        catch (Exception ex) { DduStatus.Text = "Não foi possível instalar: " + ex.Message; }
+        finally { _gfxBusy = false; BtnDduInstall.IsEnabled = true; }
     }
 }

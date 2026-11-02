@@ -17,7 +17,9 @@ public partial class MainWindow
     // Interruptores que não são do registro: as configurações do perfil global (Profile Inspector)
     private const string DrsNip = "gfx-nv-drs", DrsGsync = "gfx-nv-gsync";
 
-    private async void InitGfxTweaks()
+    private async void InitGfxTweaks() => await InitGfxTweaksAsync();
+
+    private async Task InitGfxTweaksAsync()
     {
         if (_gfxInit) return;
         _gfxInit = true;
@@ -33,8 +35,15 @@ public partial class MainWindow
         GfxNvInstallRow.Visibility = nvidia ? Visibility.Visible : Visibility.Collapsed;
         if (DebloatRows.Children.Count == 0) InitDebloat(vendors);
         BtnGfxNvDefault.Visibility = GfxNvInstallRow.Visibility;
-        var applied = await Task.Run(() => GraphicsTweaks.All.ToDictionary(t => t.Id, GraphicsTweaks.IsApplied));
-        bool firstTime = !applied.Values.Any(x => x) && !GraphicsTweaks.DrsApplied(DrsNip) && !GraphicsTweaks.DrsApplied(DrsGsync);
+        // Ajustes que a reinstalação do driver desfez: o backup antigo sai e eles voltam marcados para aplicar de novo.
+        var (applied, stale) = await Task.Run(() =>
+        {
+            var undone = GraphicsTweaks.All.Where(t => { try { return GraphicsTweaks.DiscardIfStale(t); } catch { return false; } }).Select(t => t.Id).ToHashSet();
+            try { if (GraphicsTweaks.DiscardDrsIfStale(DrsNip, GraphicsTweaks.NipFor(card))) undone.Add(DrsNip); } catch { }
+            try { if (GraphicsTweaks.DiscardDrsIfStale(DrsGsync, GraphicsTweaks.GsyncOff)) undone.Add(DrsGsync); } catch { }
+            return (GraphicsTweaks.All.ToDictionary(t => t.Id, GraphicsTweaks.IsApplied), undone);
+        });
+        bool firstTime = !applied.Values.Any(x => x) && !GraphicsTweaks.DrsApplied(DrsNip) && !GraphicsTweaks.DrsApplied(DrsGsync) && stale.Count == 0;
 
         void Section(string title)
             => GfxRows.Children.Add(new TextBlock { Text = title, Style = (Style)FindResource("Label"), Margin = new Thickness(0, 10, 0, 8) });
@@ -47,14 +56,16 @@ public partial class MainWindow
             {
                 GfxRow(DrsNip, "Perfil global recomendado (Profile Inspector)", false,
                     "Low Latency Ultra, VSync forçado desligado, " + (card?.Laptop == true ? "" : "energia em desempenho máximo, ") + "filtragem em alto desempenho, cache de shader ilimitado, " +
-                    "otimização em threads e mais (o .nip do script" + (notes.Count > 0 ? ", ajustado à sua placa" : "") + "). Antes, o valor atual de cada um é guardado.", GraphicsTweaks.DrsApplied(DrsNip), firstTime);
+                    "otimização em threads e mais (o .nip do script" + (notes.Count > 0 ? ", ajustado à sua placa" : "") + "). Antes, o valor atual de cada um é guardado.", GraphicsTweaks.DrsApplied(DrsNip), firstTime || stale.Contains(DrsNip));
                 GfxRow(DrsGsync, "Desligar o G-SYNC", true,
-                    "Desliga o G-SYNC em todos os jogos (parte do script). Deixe desligado se você usa monitor G-SYNC/FreeSync.", GraphicsTweaks.DrsApplied(DrsGsync), false);
+                    "Desliga o G-SYNC em todos os jogos (parte do script). Deixe desligado se você usa monitor G-SYNC/FreeSync.", GraphicsTweaks.DrsApplied(DrsGsync), stale.Contains(DrsGsync));
             }
             foreach (var t in GraphicsTweaks.All.Where(t => t.Vendor == vendor))
-                GfxRow(t.Id, t.Title, t.Advanced, t.Description, applied[t.Id], firstTime && t.DefaultOn);
+                GfxRow(t.Id, t.Title, t.Advanced, t.Description, applied[t.Id], firstTime && t.DefaultOn || stale.Contains(t.Id));
         }
-        GfxStatus.Text = applied.Values.Any(x => x) || !firstTime
+        GfxStatus.Text = stale.Count > 0
+            ? $"A reinstalação do driver desfez {stale.Count} ajuste(s). Eles já estão marcados de novo: clique em Aplicar."
+            : applied.Values.Any(x => x) || !firstTime
             ? "Os marcados como APLICADO já estão valendo. Desmarque e clique em Aplicar para desfazer um ajuste."
             : "Os recomendados já vêm marcados (os AVANÇADOS ficam desligados). Clique em Aplicar.";
     }
@@ -89,7 +100,18 @@ public partial class MainWindow
         _gfxToggles[id] = sw;
     }
 
-    private void RebuildGfx() { GfxRows.Children.Clear(); _gfxToggles.Clear(); _gfxInit = false; InitGfxTweaks(); }
+    private void RebuildGfx() => _ = RebuildGfxAsync();
+    private Task RebuildGfxAsync() { GfxRows.Children.Clear(); _gfxToggles.Clear(); _gfxInit = false; return InitGfxTweaksAsync(); }
+
+    /// <summary>
+    /// Depois de instalar o driver NVIDIA pelo app: relê o cartão (o driver limpo desfaz os ajustes) e aplica, sem perguntar,
+    /// o que estiver marcado — como o "Driver Updated Install &amp; Settings" do script. Devolve o resumo para a tela.
+    /// </summary>
+    private async Task<string> ApplyAfterInstallAsync()
+    {
+        await RebuildGfxAsync();
+        return await ApplyGfxAsync(ask: false);
+    }
 
     private void BtnGfxDefaults_Click(object sender, RoutedEventArgs e)
     {
@@ -100,14 +122,21 @@ public partial class MainWindow
     private async void BtnGfxApply_Click(object sender, RoutedEventArgs e)
     {
         if (_gfxBusy || !RequireAdmin()) return;
+        string? done = await ApplyGfxAsync(ask: true);
+        if (done != null) GfxStatus.Text = done;
+    }
+
+    /// <summary>Aplica os marcados e desfaz os desmarcados. <paramref name="ask"/>: confirma antes (no automático, só aplica, nunca desfaz).</summary>
+    private async Task<string> ApplyGfxAsync(bool ask)
+    {
         var turnOn = _gfxToggles.Where(kv => kv.Value.IsChecked == true && kv.Value.Tag is false).Select(kv => kv.Key).ToList();
-        var turnOff = _gfxToggles.Where(kv => kv.Value.IsChecked != true && kv.Value.Tag is true).Select(kv => kv.Key).ToList();
-        if (turnOn.Count + turnOff.Count == 0) { GfxStatus.Text = "Nada mudou: os marcados já estão aplicados."; return; }
-        if (turnOn.Contains("gfx-nv-hdcp") && MessageBox.Show(this,
+        var turnOff = ask ? _gfxToggles.Where(kv => kv.Value.IsChecked != true && kv.Value.Tag is true).Select(kv => kv.Key).ToList() : new List<string>();
+        if (turnOn.Count + turnOff.Count == 0) return ask ? "Nada mudou: os marcados já estão aplicados." : "As configurações marcadas já estavam aplicadas.";
+        if (ask && turnOn.Contains("gfx-nv-hdcp") && MessageBox.Show(this,
                 "Desligar o HDCP faz Netflix, Disney+, Prime Video e Blu-ray pararem de tocar no PC (ou tocarem em baixa qualidade). Continuar?",
-                "Desligar o HDCP", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
-        if (MessageBox.Show(this, $"Aplicar {turnOn.Count} ajuste(s) e desfazer {turnOff.Count}? O valor anterior de cada um é guardado.",
-                "Configurações da placa de vídeo", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+                "Desligar o HDCP", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return GfxStatus.Text;
+        if (ask && MessageBox.Show(this, $"Aplicar {turnOn.Count} ajuste(s) e desfazer {turnOff.Count}? O valor anterior de cada um é guardado.",
+                "Configurações da placa de vídeo", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return GfxStatus.Text;
 
         _gfxBusy = true;
         BtnGfxApply.IsEnabled = false;
@@ -137,10 +166,9 @@ public partial class MainWindow
         _gfxBusy = false;
         BtnGfxApply.IsEnabled = true;
         BtnGfxReboot.Visibility = Visibility.Visible;
-        RebuildGfx();
-        await Task.Delay(300);
-        GfxStatus.Text = (errors.Count == 0 ? $"Pronto: {turnOn.Count} aplicado(s), {turnOff.Count} desfeito(s)." : $"Concluído com {errors.Count} erro(s): " + string.Join(" · ", errors))
-                         + " Alguns ajustes (modo MSI, P-state, HDCP) só valem depois de reiniciar.";
+        await RebuildGfxAsync();
+        return (errors.Count == 0 ? $"Pronto: {turnOn.Count} configuração(ões) aplicada(s)" + (turnOff.Count > 0 ? $", {turnOff.Count} desfeita(s)." : ".") : $"Concluído com {errors.Count} erro(s): " + string.Join(" · ", errors) + ".")
+               + " Alguns ajustes (modo MSI, P-state, HDCP) só valem depois de reiniciar.";
     }
 
     private void BtnGfxUndoAll_Click(object sender, RoutedEventArgs e)
@@ -214,8 +242,10 @@ public partial class MainWindow
                 try { Process.Start(new ProcessStartInfo(GraphicsTweaks.NvidiaControlPanelStore) { UseShellExecute = true }); } catch { }
                 panel = " A página do Painel de Controle NVIDIA na Microsoft Store foi aberta: clique em Obter.";
             }
+            string settings = "";
+            if (code == 0) { GfxStatus.Text = $"Driver {g.Latest} instalado. Aplicando as configurações marcadas…"; settings = " " + await ApplyAfterInstallAsync(); }
             GfxStatus.Text = (code == 0 ? $"Driver {g.Latest} instalado." : $"O instalador terminou com o código {code}; confira se o driver aparece no Gerenciador de Dispositivos.")
-                             + panel + " Agora aplique as configurações recomendadas e reinicie. " + GpuDriverStatus.NvidiaAppTips;
+                             + settings + panel + " Reinicie para terminar. " + GpuDriverStatus.NvidiaAppTips;
             BtnGfxReboot.Visibility = Visibility.Visible;
         }
         catch (Exception ex) { GfxStatus.Text = "Não foi possível instalar: " + ex.Message; }

@@ -130,10 +130,11 @@ public partial class MainWindow
                 panel = " A página do Painel de Controle NVIDIA na Microsoft Store foi aberta: clique em Obter.";
             }
             InitDebloat(_debloatVendors);
-            await Task.Delay(300);
+            string settings = "";
+            if (code == 0) { DebloatStatus.Text = "Driver instalado. Aplicando as configurações marcadas no cartão acima…"; settings = " " + await ApplyAfterInstallAsync(); }
             DebloatStatus.Text = (code == 0 ? "Driver instalado do jeito enxuto." : $"O instalador terminou com o código {code}; confira o driver no Gerenciador de Dispositivos.")
                                  + (errors.Count > 0 ? $" {errors.Count} limpeza(s) falharam: " + string.Join(" · ", errors) + "." : "")
-                                 + panel + " Agora aplique as configurações recomendadas acima e reinicie.";
+                                 + settings + panel + " Reinicie para terminar.";
             BtnGfxReboot.Visibility = Visibility.Visible;
         }
         catch (Exception ex) { DebloatStatus.Text = "Não foi possível instalar: " + ex.Message; }
