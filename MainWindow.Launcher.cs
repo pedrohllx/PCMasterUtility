@@ -52,7 +52,16 @@ public partial class MainWindow
         }
         BuildToggleRows();
         PageLauncher.SizeChanged += (_, _) => LDialog.MaxHeight = Math.Max(300, PageLauncher.ActualHeight - 48);
+        (_settings.LibListView ? LViewList : LViewCards).IsChecked = true;
         _ = ScanGamesAsync();
+    }
+
+    private void LView_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!_launcherInited) return;
+        bool list = LViewList.IsChecked == true;
+        if (_settings.LibListView != list) { _settings.LibListView = list; try { _settings.Save(); } catch { } }
+        ApplyGameFilter();
     }
 
     // ---------------- Biblioteca ----------------
@@ -77,9 +86,58 @@ public partial class MainWindow
     private void ApplyGameFilter()
     {
         string q = LGameSearch.Text.Trim();
+        bool list = _settings.LibListView;
         LGameGrid.Children.Clear();
+        _playingButton = null;
         foreach (var g in _libGames.Where(g => q.Length == 0 || g.Name.Contains(q, StringComparison.CurrentCultureIgnoreCase)))
-            LGameGrid.Children.Add(GameCard(g));
+            LGameGrid.Children.Add(list ? GameRow(g) : GameCard(g));
+    }
+
+    /// <summary>Linha do modo lista: banner horizontal, nome, loja e pasta, e os mesmos botões do cartão.</summary>
+    private FrameworkElement GameRow(LibGame g)
+    {
+        var banner = new Border { Width = 184, Height = 86, CornerRadius = new CornerRadius(8), Background = (Brush)FindResource("AccentGradient"),
+            Child = new TextBlock { Text = Initials(g.Name), FontSize = 26, FontWeight = FontWeights.Bold, Foreground = (Brush)FindResource("OnAccent"),
+                Opacity = 0.85, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center } };
+        _ = LoadArtAsync(g, banner, vertical: false);
+
+        var info = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(16, 0, 16, 0) };
+        info.Children.Add(new TextBlock { Text = g.Name, FontSize = 15, FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis });
+        info.Children.Add(new TextBlock { Text = g.Store.ToUpperInvariant(), FontSize = 10.5, FontWeight = FontWeights.SemiBold, Foreground = (Brush)FindResource("Accent"), Margin = new Thickness(0, 3, 0, 3) });
+        info.Children.Add(new TextBlock { Text = g.InstallDir, FontSize = 11.5, Foreground = (Brush)FindResource("Muted"), TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = g.InstallDir });
+
+        var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition());
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.Children.Add(banner);
+        Grid.SetColumn(info, 1); grid.Children.Add(info);
+        var buttons = GameButtons(g);
+        buttons.VerticalAlignment = VerticalAlignment.Center;
+        Grid.SetColumn(buttons, 2); grid.Children.Add(buttons);
+
+        var row = new Border { Style = (Style)FindResource("CardBorder"), Padding = new Thickness(10), Margin = new Thickness(0, 0, 0, 10), Child = grid };
+        // A lista ocupa a largura toda (o WrapPanel não estica sozinho).
+        row.SetBinding(WidthProperty, new System.Windows.Data.Binding(nameof(ActualWidth)) { Source = LGameGrid });
+        return row;
+    }
+
+    private static string Initials(string name)
+        => string.Concat(name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(s => char.ToUpperInvariant(s[0])));
+
+    /// <summary>"Preparar e jogar" e "Ajustes" (mesmos nos cartões e na lista).</summary>
+    private StackPanel GameButtons(LibGame g)
+    {
+        var play = new Button { Content = _playingKey == g.Key ? "Parar" : "Preparar e jogar", Style = (Style)FindResource("PrimaryButton"),
+            Padding = new Thickness(10, 6, 10, 6), FontSize = 11.5, Margin = new Thickness(0, 0, 6, 0) };
+        play.Click += (_, _) => PlayGame(g, play);
+        if (_playingKey == g.Key) _playingButton = play;
+        var settings = new Button { Content = "Ajustes", Style = (Style)FindResource("OutlineButton"), Padding = new Thickness(12, 6, 12, 6), FontSize = 11.5 };
+        settings.Click += (_, _) => OpenGameSettings(g);
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal };
+        buttons.Children.Add(play);
+        buttons.Children.Add(settings);
+        return buttons;
     }
 
     private void LGameSearch_Changed(object sender, TextChangedEventArgs e)
@@ -109,12 +167,12 @@ public partial class MainWindow
         var cover = new Border { Height = coverH, CornerRadius = new CornerRadius(10, 10, 0, 0), Background = (Brush)FindResource("AccentGradient") };
         var initials = new TextBlock
         {
-            Text = string.Concat(g.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(s => char.ToUpperInvariant(s[0]))),
+            Text = Initials(g.Name),
             FontSize = 44, FontWeight = FontWeights.Bold, Foreground = (Brush)FindResource("OnAccent"), Opacity = 0.85,
             HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
         };
         cover.Child = initials;
-        _ = LoadCoverAsync(g, cover);
+        _ = LoadArtAsync(g, cover, vertical: true);
 
         var info = new StackPanel { Margin = new Thickness(10, 8, 10, 10) };
         info.Children.Add(new TextBlock { Text = g.Name.ToUpperInvariant(), FontWeight = FontWeights.SemiBold, FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = g.Name });
@@ -128,15 +186,8 @@ public partial class MainWindow
             BorderBrush = (Brush)FindResource("Line"), BorderThickness = new Thickness(1), Child = body,
         };
 
-        var play = new Button { Content = _playingKey == g.Key ? "Parar" : "Preparar e jogar", Style = (Style)FindResource("PrimaryButton"),
-            Padding = new Thickness(10, 6, 10, 6), FontSize = 11.5, Margin = new Thickness(0, 0, 6, 0) };
-        play.Click += (_, _) => PlayGame(g, play);
-        if (_playingKey == g.Key) _playingButton = play;
-        var settings = new Button { Content = "Ajustes", Style = (Style)FindResource("OutlineButton"), Padding = new Thickness(12, 6, 12, 6), FontSize = 11.5 };
-        settings.Click += (_, _) => OpenGameSettings(g);
-        var buttons = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 8, 0, 0) };
-        buttons.Children.Add(play);
-        buttons.Children.Add(settings);
+        var buttons = GameButtons(g);
+        buttons.Margin = new Thickness(0, 8, 0, 0);
 
         var stack = new StackPanel { Width = w, Margin = new Thickness(0, 0, 16, 20) };
         stack.Children.Add(card);
@@ -144,20 +195,22 @@ public partial class MainWindow
         return stack;
     }
 
-    /// <summary>Carrega a capa fora da thread da janela, já reduzida ao tamanho do cartão (pouca memória).</summary>
-    private async Task LoadCoverAsync(LibGame g, Border cover)
+    /// <summary>Carrega a capa (cartões) ou o banner (lista) fora da thread da janela, já reduzida ao tamanho do quadro
+    /// (pouca memória). Se não houver no disco, a arte é baixada uma vez da Steam.</summary>
+    private async Task LoadArtAsync(LibGame g, Border cover, bool vertical)
     {
-        if (!_covers.TryGetValue(g.Key, out var img))
+        string key = g.Key + (vertical ? "|v" : "|h");
+        if (!_covers.TryGetValue(key, out var img))
         {
             img = await Task.Run<ImageSource?>(() =>
             {
                 try
                 {
-                    if (g.CoverPath() is not string path) return null;
+                    if (g.ArtPath(vertical) is not string path) return null;
                     var bmp = new BitmapImage();
                     bmp.BeginInit();
                     bmp.UriSource = new Uri(path);
-                    bmp.DecodePixelWidth = 340;
+                    bmp.DecodePixelWidth = vertical ? 340 : 368;
                     bmp.CacheOption = BitmapCacheOption.OnLoad;
                     bmp.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
                     bmp.EndInit();
@@ -166,10 +219,10 @@ public partial class MainWindow
                 }
                 catch { return null; }
             });
-            _covers[g.Key] = img;
+            _covers[key] = img;
         }
         if (img == null) return;
-        var brush = new ImageBrush(img) { Stretch = Stretch.UniformToFill, AlignmentY = AlignmentY.Top };
+        var brush = new ImageBrush(img) { Stretch = Stretch.UniformToFill, AlignmentY = vertical ? AlignmentY.Top : AlignmentY.Center };
         brush.Freeze();
         cover.Background = brush;
         cover.Child = null;

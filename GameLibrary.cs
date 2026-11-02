@@ -19,15 +19,52 @@ public sealed class LibGame
     public string Subtitle => Store;
     public bool IsSteam => Store == "Steam";
 
-    /// <summary>Capa vertical do jogo (a mesma da biblioteca da Steam), ou null se não houver uma no disco.</summary>
-    public string? CoverPath()
+    /// <summary>
+    /// Arte do jogo da biblioteca da Steam: capa vertical (cartões) ou banner horizontal (lista).
+    /// A Steam nova guarda as imagens em subpastas com nome de hash (librarycache\{appid}\{hash}\library_capsule.jpg);
+    /// a antiga, direto na pasta do jogo ou como {appid}_library_600x900.jpg. Se não houver nada no disco, baixa uma vez
+    /// do servidor de imagens da Steam e guarda em %LocalAppData%\PcismoMaster\covers.
+    /// </summary>
+    public string? ArtPath(bool vertical)
     {
-        if (!IsSteam || SteamInfo.SteamPath() is not string steam) return null;
-        string cache = Path.Combine(steam, "appcache", "librarycache");
-        foreach (var f in new[] { Path.Combine(cache, Id, "library_600x900.jpg"), Path.Combine(cache, $"{Id}_library_600x900.jpg"),
-                                  Path.Combine(cache, Id, "header.jpg"), Path.Combine(cache, $"{Id}_header.jpg") })
-            if (File.Exists(f)) return f;
-        return null;
+        if (!IsSteam) return null;
+        string[] names = vertical
+            ? new[] { "library_600x900.jpg", "library_capsule.jpg", "library_600x900_2x.jpg" }
+            : new[] { "library_header.jpg", "header.jpg", "library_capsule.jpg", "library_600x900.jpg" };
+        if (SteamInfo.SteamPath() is string steam)
+        {
+            string cache = Path.Combine(steam, "appcache", "librarycache");
+            string dir = Path.Combine(cache, Id);
+            if (Directory.Exists(dir))
+            {
+                var files = Directory.EnumerateFiles(dir, "*.jpg", SearchOption.AllDirectories).ToList();
+                foreach (var n in names)
+                    if (files.FirstOrDefault(f => Path.GetFileName(f).Equals(n, StringComparison.OrdinalIgnoreCase)) is string hit) return hit;
+            }
+            foreach (var n in names)
+                if (File.Exists(Path.Combine(cache, $"{Id}_{n}"))) return Path.Combine(cache, $"{Id}_{n}");
+        }
+        return Download(vertical ? "library_600x900.jpg" : "header.jpg");
+    }
+
+    private static readonly System.Net.Http.HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(8) };
+
+    private string? Download(string name)
+    {
+        try
+        {
+            string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PcismoMaster", "covers");
+            string file = Path.Combine(dir, $"{Id}_{name}");
+            string miss = file + ".none";
+            if (File.Exists(file)) return file;
+            if (File.Exists(miss) && (DateTime.Now - File.GetLastWriteTime(miss)).TotalDays < 7) return null; // não existe na Steam: tenta de novo em 7 dias
+            Directory.CreateDirectory(dir);
+            var resp = Http.GetAsync($"https://cdn.cloudflare.steamstatic.com/steam/apps/{Id}/{name}").GetAwaiter().GetResult();
+            if (!resp.IsSuccessStatusCode) { File.WriteAllText(miss, ""); return null; }
+            File.WriteAllBytes(file, resp.Content.ReadAsByteArrayAsync().GetAwaiter().GetResult());
+            return file;
+        }
+        catch { return null; }
     }
 }
 

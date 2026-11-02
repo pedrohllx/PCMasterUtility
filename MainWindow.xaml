@@ -1066,9 +1066,26 @@
                             </Grid>
                             <TextBlock x:Name="LStatus" Foreground="{DynamicResource Accent}" TextWrapping="Wrap" Margin="0,0,0,10"/>
                             <Grid Margin="0,0,0,12">
-                                <TextBlock Text="Meus jogos" FontSize="15" FontWeight="SemiBold"/>
-                                <TextBlock x:Name="LGameCount" Text="Procurando seus jogos…" Foreground="{DynamicResource Muted}" FontSize="12"
-                                           HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                <TextBlock Text="Meus jogos" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <TextBlock x:Name="LGameCount" Text="Procurando seus jogos…" Foreground="{DynamicResource Muted}" FontSize="12"
+                                               VerticalAlignment="Center" Margin="0,0,14,0"/>
+                                    <!-- Exibição: cartões com capa ou lista com banner -->
+                                    <RadioButton x:Name="LViewCards" Style="{StaticResource Chip}" GroupName="LView" Margin="0,0,6,0" Checked="LView_Changed"
+                                                 ToolTip="Cartões com a capa">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="&#xF0E2;" FontFamily="{StaticResource Icons}" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="Cartões"/>
+                                        </StackPanel>
+                                    </RadioButton>
+                                    <RadioButton x:Name="LViewList" Style="{StaticResource Chip}" GroupName="LView" Margin="0" Checked="LView_Changed"
+                                                 ToolTip="Lista com banner">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="&#xE8FD;" FontFamily="{StaticResource Icons}" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="Lista"/>
+                                        </StackPanel>
+                                    </RadioButton>
+                                </StackPanel>
                             </Grid>
                             <WrapPanel x:Name="LGameGrid"/>
                         </StackPanel>
