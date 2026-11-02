@@ -28,6 +28,18 @@
         <GradientStop Color="#29B4D9" Offset="1"/>
     </LinearGradientBrush>
     <SolidColorBrush x:Key="AccentCyan" Color="#29B4D9"/>
+    <SolidColorBrush x:Key="AccentSoft" Color="#26A647FE"/>
+
+    <!-- Selo pequeno ("Cria ponto de restauração", "Recomendado 1 vez por semana") da aba Manutenção -->
+    <Style x:Key="MaintBadge" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource AccentSoft}"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="Padding" Value="9,4"/>
+        <Setter Property="HorizontalAlignment" Value="Left"/>
+        <Setter Property="TextElement.Foreground" Value="{DynamicResource Accent}"/>
+        <Setter Property="TextElement.FontSize" Value="11"/>
+        <Setter Property="TextElement.FontWeight" Value="SemiBold"/>
+    </Style>
     <SolidColorBrush x:Key="OnAccent" Color="#FFFFFF"/>
 
     <FontFamily x:Key="Mono">Cascadia Mono, Consolas</FontFamily>

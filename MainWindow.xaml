@@ -222,6 +222,15 @@
                                 </StackPanel>
                             </RadioButton>
                             </StackPanel>
+                            <ToggleButton x:Name="GrpMaint" Style="{StaticResource NavGroup}" Content="MANUTENÇÃO"/>
+                            <StackPanel x:Name="GrpMaintItems" Margin="10,0,0,4" Visibility="{Binding IsChecked, ElementName=GrpMaint, Converter={StaticResource BoolVis}}">
+                            <RadioButton x:Name="NavMaint" Style="{StaticResource NavItem}" Tag="PageMaint" Checked="Nav_Checked">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE90F;" FontFamily="{StaticResource Icons}" FontSize="14" Width="28" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Reparos do Windows" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </RadioButton>
+                            </StackPanel>
                             <ToggleButton x:Name="GrpGames" Style="{StaticResource NavGroup}" Content="JOGOS"/>
                             <StackPanel x:Name="GrpGamesItems" Margin="10,0,0,4" Visibility="{Binding IsChecked, ElementName=GrpGames, Converter={StaticResource BoolVis}}">
                             <RadioButton x:Name="NavLauncher" Style="{StaticResource NavItem}" Tag="PageLauncher" Checked="Nav_Checked">
@@ -1265,6 +1274,68 @@
                         </DataGrid>
                     </Border>
                 </Grid>
+
+                <!-- ===== MANUTENÇÃO · Reparos do Windows ===== -->
+                <ScrollViewer x:Name="PageMaint" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="36,30,36,30">
+                        <StackPanel Margin="0,0,0,20">
+                            <TextBlock Text="MANUTENÇÃO" Style="{StaticResource H1}"/>
+                            <TextBlock Text="Reparos e reinícios do Windows num clique · cada ferramenta pede confirmação antes de rodar" Style="{StaticResource Sub}" TextWrapping="Wrap"/>
+                        </StackPanel>
+
+                        <!-- Revisão semanal -->
+                        <Border Style="{StaticResource CardBorder}" Margin="0,0,0,22">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                        <Border Width="38" Height="38" CornerRadius="10" Background="{DynamicResource AccentGradient}" Margin="0,0,12,0">
+                                            <TextBlock Text="&#xE95E;" FontFamily="{StaticResource Icons}" FontSize="18" Foreground="{DynamicResource OnAccent}"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <TextBlock Text="Revisão semanal" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                        <Border Style="{StaticResource MaintBadge}" VerticalAlignment="Center">
+                                            <TextBlock x:Name="MaintWeeklyBadge" Text="Recomendado 1 vez por semana"/>
+                                        </Border>
+                                    </StackPanel>
+                                    <TextBlock x:Name="MaintWeeklyDesc" Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                                    <TextBlock Text="✓  Verificar o disco" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                    <TextBlock Text="✓  Verificar os arquivos protegidos do sistema" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                    <TextBlock Text="✓  Reparar a imagem do Windows" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Border Style="{StaticResource MaintBadge}" Margin="0,0,10,0">
+                                            <TextBlock Text="Cria ponto de restauração"/>
+                                        </Border>
+                                        <TextBlock x:Name="MaintWeeklyLast" Foreground="{DynamicResource Muted}" FontSize="11.5" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </StackPanel>
+                                <Button x:Name="BtnMaintWeekly" Grid.Column="1" Style="{StaticResource PrimaryButton}" Content="Fazer a revisão agora"
+                                        Padding="18,10" VerticalAlignment="Bottom" Margin="16,0,0,0" Click="BtnMaintWeekly_Click"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Saída ao vivo -->
+                        <Border x:Name="MaintRunCard" Style="{StaticResource CardBorder}" Margin="0,0,0,22" Visibility="Collapsed">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,8">
+                                    <TextBlock x:Name="MaintRunTitle" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    <Button x:Name="BtnMaintCancel" Style="{StaticResource OutlineButton}" Content="CANCELAR" Padding="12,5" FontSize="11"
+                                            HorizontalAlignment="Right" Click="BtnMaintCancel_Click"/>
+                                </Grid>
+                                <TextBlock x:Name="MaintRunStatus" Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                <TextBox x:Name="MaintLog" IsReadOnly="True" Height="220" FontFamily="{StaticResource Mono}" FontSize="11.5"
+                                         TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                                         VerticalContentAlignment="Top" Padding="10"/>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="Outras ferramentas" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                        <UniformGrid x:Name="MaintTools" Columns="2"/>
+                    </StackPanel>
+                </ScrollViewer>
 
                 <!-- ===== PLACA DE VÍDEO ===== -->
                 <Grid x:Name="PageGpu" Margin="36,30,36,30" Visibility="Collapsed">
