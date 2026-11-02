@@ -1,4 +1,4 @@
-﻿using System.Management;
+using System.Management;
 using System.Text.RegularExpressions;
 using LibreHardwareMonitor.Hardware;
 

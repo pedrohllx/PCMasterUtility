@@ -47,7 +47,7 @@ public sealed class CustomGame
 public sealed class AppSettings
 {
     public static string Folder { get; } =
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ResetExplode");
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PcismoMaster");
     private static string FilePath => Path.Combine(Folder, "settings.json");
 
     public string? HowManyFpsKeyProtected { get; set; }

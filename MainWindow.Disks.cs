@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Windows;
@@ -135,7 +135,7 @@ public partial class MainWindow
             Title = "Exportar relatório",
             Filter = "Relatório HTML (*.html)|*.html|Dados JSON (*.json)|*.json",
             DefaultExt = ".html",
-            FileName = $"RESET-EXPLODE-relatorio-{DateTime.Now:yyyyMMdd-HHmm}",
+            FileName = $"PcismoMaster-relatorio-{DateTime.Now:yyyyMMdd-HHmm}",
         };
         if (dlg.ShowDialog(this) != true) return;
         string path = dlg.FileName;
@@ -175,7 +175,7 @@ public partial class MainWindow
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, "Não foi possível gerar o relatório:\n" + ex.Message, "RESET EXPLODE", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, "Não foi possível gerar o relatório:\n" + ex.Message, "PcismoMaster", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         finally
         {

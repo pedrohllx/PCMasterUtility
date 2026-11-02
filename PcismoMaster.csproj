@@ -8,9 +8,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
-    <AssemblyName>ResetExplode</AssemblyName>
-    <Product>RESET EXPLODE</Product>
-    <Version>0.16.0</Version>
+    <AssemblyName>PcismoMaster</AssemblyName>
+    <Product>PcismoMaster</Product>
+    <Version>0.1.0</Version>
     <!-- Sempre otimizado: o RESET BENCH e os stress tests precisam do JIT otimizado também em Debug -->
     <Optimize>true</Optimize>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -45,4 +45,4 @@
     <PackageReference Include="Vortice.Dxc" Version="3.8.3" />
   </ItemGroup>
 
-</Project>
+<ItemGroup><Compile Remove="tests\**\*.cs" /><None Update="README.md;licenses\**\*;docs\**\*;LICENSE" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" /></ItemGroup></Project>

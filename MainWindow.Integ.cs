@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -273,9 +273,9 @@ public partial class MainWindow
     {
         if (_lightBusy) return;
         var ok = MessageBox.Show(this,
-            "O RESET EXPLODE vai baixar o SDK oficial da Corsair (github.com/CorsairOfficial/cue-sdk), extrair somente o arquivo " +
+            "O PcismoMaster vai baixar o SDK oficial da Corsair (github.com/CorsairOfficial/cue-sdk), extrair somente o arquivo " +
             "iCUESDK.x64_2019.dll para a pasta\n" + CorsairSdkInstaller.TargetPath + "\ne conferir a assinatura digital dele.\n\nContinuar?",
-            "RESET EXPLODE · SDK da Corsair", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            "PcismoMaster · SDK da Corsair", MessageBoxButton.YesNo, MessageBoxImage.Question);
         if (ok != MessageBoxResult.Yes) return;
 
         _lightBusy = true;
