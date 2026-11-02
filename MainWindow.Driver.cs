@@ -18,6 +18,7 @@ public partial class MainWindow
         InitGfxTweaks();
         if (_drvInit) return;
         _drvInit = true;
+        InitRuntimes();
         BtnDrvScan_Click(this, new RoutedEventArgs());
     }
 

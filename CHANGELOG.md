@@ -4,6 +4,11 @@ A numeração segue **SemVer** (`MAJOR.MINOR.PATCH`). Regras e processo em [docs
 
 ## Em desenvolvimento
 
+- **Drivers · nova sub-aba Painel NVIDIA**: o "Gerenciar as configurações em 3D" do Painel de Controle NVIDIA dentro do app, com os mesmos nomes e opções (em português), gravando direto nos perfis do driver.
+  - **Configurações globais** e **de programa** (lista com busca); cada linha mostra de onde vem o valor (você, NVIDIA, global ou padrão) e "Usar a configuração global"/"Padrão do driver" tira a alteração.
+  - Oclusão de ambiente, filtragem anisotrópica, suavização (FXAA, gama, modo, configuração, transparência), FPS máximo e em segundo plano, CUDA Sysmem Fallback, modo de baixa latência (Desligado/Ligado/Ultra), tecnologia do monitor, MFAA, GDI do OpenGL, gerenciamento de energia, taxa de atualização preferida, cache de sombreador, filtragem de textura, otimização encadeada, buffer triplo, sincronização vertical e método de apresentação Vulkan/OpenGL; em notebooks híbridos, processador gráfico preferido.
+  - Aplicar só o que mudou, Descartar e Restaurar (global: padrão do driver; programa: padrão da NVIDIA).
+- **Drivers · Bibliotecas para jogos**: verificação (sem baixar nada) do Visual C++ 2005 a 2015-2022 e do DirectX de junho de 2010, em 32 e 64 bits. A instalação vai ficar na aba Instalar apps.
 - **Drivers · driver e configurações ajustados à placa de cada PC** (os scripts do Ultimate foram feitos para a RTX 4090 de mesa do autor):
   - O app identifica a placa NVIDIA pelo código PCI (funciona até sem driver, depois do DDU): geração (Kepler até Blackwell), RTX ou GTX, memória, notebook ou PC de mesa e gráfico híbrido. O cartão mostra "Sua placa: …" e o que foi ajustado.
   - **Driver certo**: sem driver, a busca usa a geração da placa e se é notebook, em vez de uma RTX de mesa qualquer. Assim GTX 900/10 recebem o último driver que as suporta e notebooks recebem o driver de notebook (inclusive 900M/700M e MX).

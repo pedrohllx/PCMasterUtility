@@ -68,11 +68,13 @@ public partial class MainWindow
 
     private void DrvTab_Changed(object sender, RoutedEventArgs e)
     {
-        if (DrvPanel == null || NpiPanel == null) return;
-        bool npi = DrvTabNpi.IsChecked == true;
-        DrvPanel.Visibility = npi ? Visibility.Collapsed : Visibility.Visible;
+        if (DrvPanel == null || NpiPanel == null || NvcpPanel == null) return;
+        bool npi = DrvTabNpi.IsChecked == true, nvcp = DrvTabNvcp.IsChecked == true;
+        DrvPanel.Visibility = npi || nvcp ? Visibility.Collapsed : Visibility.Visible;
         NpiPanel.Visibility = npi ? Visibility.Visible : Visibility.Collapsed;
+        NvcpPanel.Visibility = nvcp ? Visibility.Visible : Visibility.Collapsed;
         if (npi) InitNpi();
+        if (nvcp) InitNvcp();
     }
 
     private async void InitNpi()

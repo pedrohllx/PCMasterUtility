@@ -805,6 +805,7 @@
                     <!-- Sub-abas: Drivers (atual) e Profile Inspector -->
                     <StackPanel Orientation="Horizontal" Margin="36,24,36,0">
                         <RadioButton x:Name="DrvTabDrivers" Style="{StaticResource Chip}" GroupName="DrvTab" Content="Drivers" IsChecked="True" Checked="DrvTab_Changed"/>
+                        <RadioButton x:Name="DrvTabNvcp" Style="{StaticResource Chip}" GroupName="DrvTab" Content="Painel NVIDIA" Checked="DrvTab_Changed"/>
                         <RadioButton x:Name="DrvTabNpi" Style="{StaticResource Chip}" GroupName="DrvTab" Content="Profile Inspector" Checked="DrvTab_Changed"/>
                     </StackPanel>
                 <ScrollViewer x:Name="DrvPanel" Grid.Row="1" VerticalScrollBarVisibility="Auto">
@@ -938,6 +939,27 @@
                             </StackPanel>
                         </Border>
 
+                        <!-- Bibliotecas para jogos: só verificação (a instalação fica em Instalar apps) -->
+                        <Border Style="{StaticResource CardBorder}" Margin="0,0,0,14">
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,10">
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource OutlineButton}" Content="Verificar de novo" Padding="12,6" VerticalAlignment="Center" Click="BtnRuntimeCheck_Click"/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Border Width="34" Height="34" CornerRadius="9" Background="{DynamicResource AccentGradient}" Margin="0,0,12,0">
+                                            <TextBlock Text="&#xE73E;" FontFamily="{StaticResource Icons}" FontSize="16" Foreground="{DynamicResource OnAccent}"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Bibliotecas para jogos (Visual C++ e DirectX)" FontSize="15" FontWeight="SemiBold"/>
+                                            <TextBlock Text="Só confere o que está instalado. Para instalar, use a aba Instalar apps" Foreground="{DynamicResource Muted}" FontSize="12"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </DockPanel>
+                                <StackPanel x:Name="RuntimeRows"/>
+                                <TextBlock x:Name="RuntimeNote" Foreground="{DynamicResource Faint}" FontSize="11.5" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                            </StackPanel>
+                        </Border>
+
                         <Border Style="{StaticResource CardBorder}" Margin="0,0,0,14">
                             <StackPanel>
                                 <TextBlock Text="PLACA DE VÍDEO" Style="{StaticResource Label}"/>
@@ -1037,6 +1059,62 @@
                         </Border>
                     </StackPanel>
                 </ScrollViewer>
+
+                <!-- ===== Painel NVIDIA ("Gerenciar as configurações em 3D" do Painel de Controle NVIDIA) ===== -->
+                <Grid x:Name="NvcpPanel" Grid.Row="1" Visibility="Collapsed" Margin="36,16,36,24">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="300"/>
+                        <ColumnDefinition Width="18"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.ColumnSpan="3" Margin="0,0,0,14">
+                        <TextBlock Text="Painel NVIDIA" Style="{StaticResource H1}"/>
+                        <TextBlock Text="As configurações em 3D do Painel de Controle NVIDIA, com os mesmos nomes e opções: globais (todos os jogos) ou de um programa."
+                                   Style="{StaticResource Sub}" TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <DockPanel Grid.Row="1">
+                        <TextBox x:Name="NvcpProfileSearch" DockPanel.Dock="Top" Tag="Buscar programa ou jogo…" Margin="0,0,0,8" TextChanged="NvcpProfileSearch_Changed"/>
+                        <TextBlock x:Name="NvcpProfileCount" DockPanel.Dock="Top" Foreground="{DynamicResource Muted}" FontSize="11.5" Margin="2,0,0,6"/>
+                        <Border Style="{StaticResource CardBorder}" Padding="4">
+                            <ListBox x:Name="NvcpProfiles" SelectionChanged="NvcpProfiles_Changed" VirtualizingPanel.IsVirtualizing="True"
+                                     VirtualizingPanel.VirtualizationMode="Recycling" ItemContainerStyle="{StaticResource ListNavItem}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis" FontSize="12.5"/>
+                                            <TextBlock Text="{Binding Detail}" FontSize="10.5" Opacity="0.6"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Border>
+                    </DockPanel>
+
+                    <Border Grid.Row="1" Grid.Column="2" Style="{StaticResource CardBorder}" Padding="20,16">
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                                <TextBlock x:Name="NvcpTitle" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock x:Name="NvcpSubtitle" Foreground="{DynamicResource Muted}" FontSize="12" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
+                                <WrapPanel>
+                                    <Button x:Name="BtnNvcpApply" Style="{StaticResource PrimaryButton}" Content="Aplicar" Padding="18,8" Margin="0,0,10,8" Click="BtnNvcpApply_Click"/>
+                                    <Button Style="{StaticResource OutlineButton}" Content="Descartar alterações" Padding="14,8" Margin="0,0,10,8" Click="BtnNvcpDiscard_Click"/>
+                                    <Button x:Name="BtnNvcpRestore" Style="{StaticResource OutlineButton}" Content="Restaurar" Padding="14,8" Margin="0,0,10,8" Click="BtnNvcpRestore_Click"/>
+                                </WrapPanel>
+                                <TextBlock x:Name="NvcpStatus" Foreground="{DynamicResource Accent}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel x:Name="NvcpRows" Margin="0,0,8,0"/>
+                            </ScrollViewer>
+                        </DockPanel>
+                    </Border>
+                </Grid>
 
                 <!-- ===== Profile Inspector (perfis do driver NVIDIA) ===== -->
                 <Grid x:Name="NpiPanel" Grid.Row="1" Visibility="Collapsed" Margin="36,16,36,24">
