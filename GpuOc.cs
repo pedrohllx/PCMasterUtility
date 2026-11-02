@@ -92,8 +92,7 @@ public sealed class GpuOc
         int core = 0, mem = 0, volt = 0;
         try
         {
-            var p0 = NvApi.GetPstates20(NvApiGpu);
-            mem = (P0Clock(p0, NvApi.CLOCK_DOMAIN_MEMORY)?.FreqDeltaKhz.Value ?? 0) / 1000;
+            mem = EffectiveMemOffsetMhz() ?? 0;
             if (CurveSupported)
             {
                 // O offset global é o delta mais comum da curva (o que um slider de Core Clock grava em todos os pontos).
@@ -104,6 +103,19 @@ public sealed class GpuOc
         }
         catch (Exception) { }
         return (core, mem, volt);
+    }
+
+    /// <summary>Offset de memória que está valendo de fato: clock absoluto da P0 menos o clock base de fábrica
+    /// (o campo de delta guarda o que foi pedido, mesmo quando o driver não ativou).</summary>
+    public int? EffectiveMemOffsetMhz()
+    {
+        try
+        {
+            uint baseKhz = NvApi.GetClockFrequencyKhz(NvApiGpu, NvApi.CLOCK_FREQ_TYPE_BASE, NvApi.CLOCK_DOMAIN_MEMORY);
+            return P0Clock(NvApi.GetPstates20(NvApiGpu), NvApi.CLOCK_DOMAIN_MEMORY) is { Data0: > 0 } e && baseKhz > 0
+                ? ((int)e.Data0 - (int)baseKhz) / 1000 : null;
+        }
+        catch (Exception) { return null; }
     }
 
     public OcSample Sample()
@@ -131,24 +143,33 @@ public sealed class GpuOc
 
     // ---------------- Escrita ----------------
 
-    /// <summary>Aplica o perfil inteiro. Ordem exigida pelo driver: offsets de P0 (memória) e tensão primeiro,
-    /// porque regravar a P0 apaga os deltas da curva; depois a curva calculada sobre a de fábrica.</summary>
+    /// <summary>Aplica o perfil inteiro: tensão, limpeza da tabela da curva, offset de memória da P0 e por último
+    /// os pontos da curva. A tabela da curva também guarda a entrada da memória (depois dos pontos do core), então
+    /// zerá-la inteira depois de gravar a memória desfaz o offset; e regravar a P0 apaga os deltas da curva.</summary>
     public List<string> Apply(OcProfile p)
     {
         var report = new List<string>();
         if (NvApiGpu != IntPtr.Zero)
         {
-            Step(report, "Memory Clock", () => NvApi.SetPstate0Offsets(NvApiGpu, 0, Math.Clamp(p.MemOffsetMhz, MemRangeMhz.Min, MemRangeMhz.Max) * 1000, 0), $"{p.MemOffsetMhz:+0;-0;0} MHz");
+            int mem = Math.Clamp(p.MemOffsetMhz, MemRangeMhz.Min, MemRangeMhz.Max);
             Step(report, "Core Voltage", () => NvApi.SetCoreVoltageBoostPercent(NvApiGpu, (uint)Math.Clamp(p.VoltagePercent, 0, 100)), $"{p.VoltagePercent}%");
             if (CurveSupported)
             {
+                try { NvApi.SetCurveFreqDeltasKhz(NvApiGpu, new int[NvApi.MaxCurveAnchors]); } catch (Exception) { }
+            }
+            Step(report, "Memory Clock", () => NvApi.SetPstate0Offsets(NvApiGpu, 0, mem * 1000, 0), $"{mem:+0;-0;0} MHz");
+            int memLine = report.Count - 1;
+            if (CurveSupported)
+            {
+                // Só os pontos do core: a gravação lê a tabela e troca apenas esses índices, preservando a memória.
                 Step(report, "Curva V/F", () =>
                 {
-                    NvApi.SetCurveFreqDeltasKhz(NvApiGpu, new int[NvApi.MaxCurveAnchors]);
                     var curve = ReadCurve() ?? throw new NvApiException("a curva não pôde ser lida (tente de novo em instantes)");
                     NvApi.SetCurveFreqDeltasKhz(NvApiGpu, VfCurveMath.DeltasKhz(curve.Stock, p));
                 }, p.UvCapMv is int cap ? $"Core {p.CoreOffsetMhz:+0;-0;0} MHz, undervolt {cap} mV" : $"Core {p.CoreOffsetMhz:+0;-0;0} MHz");
             }
+            if (EffectiveMemOffsetMhz() is int got && Math.Abs(got - mem) > 1)
+                report[memLine] = $"Memory Clock: o driver aceitou {mem:+0;-0;0} MHz, mas o clock efetivo ficou em {got:+0;-0;0} MHz.";
             else if (p.CoreOffsetMhz != 0)
             {
                 Step(report, "Core Clock", () => NvApi.SetPstate0Offsets(NvApiGpu, p.CoreOffsetMhz * 1000, p.MemOffsetMhz * 1000, 0), $"{p.CoreOffsetMhz:+0;-0;0} MHz");
@@ -172,9 +193,9 @@ public sealed class GpuOc
         {
             Step(report, "Curva e offsets", () =>
             {
+                NvApi.SetCoreVoltageBoostPercent(NvApiGpu, 0);
                 NvApi.SetPstate0Offsets(NvApiGpu, 0, 0, 0);
                 if (CurveSupported) NvApi.SetCurveFreqDeltasKhz(NvApiGpu, new int[NvApi.MaxCurveAnchors]);
-                NvApi.SetCoreVoltageBoostPercent(NvApiGpu, 0);
             }, "padrão");
         }
         if (Power is { } pw) NvmlStep(report, "Power Limit", Nvml.SetPowerLimitMw(NvmlGpu, pw.DefaultW * 1000), "100%");
