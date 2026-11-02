@@ -903,6 +903,34 @@
                             </StackPanel>
                         </Border>
 
+                        <!-- Instalação enxuta (Ultimate · 5 Graphics · 4 Driver Debloat Install & Settings) -->
+                        <Border Style="{StaticResource CardBorder}" Margin="0,0,0,14">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <Border Width="34" Height="34" CornerRadius="9" Background="{DynamicResource AccentGradient}" Margin="0,0,12,0">
+                                        <TextBlock Text="&#xE74D;" FontFamily="{StaticResource Icons}" FontSize="16" Foreground="{DynamicResource OnAccent}"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="Instalação enxuta do driver (debloat)" FontSize="15" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Instala só o driver, sem telemetria, apps e serviços extras. Marque o que deve sair" Foreground="{DynamicResource Muted}" FontSize="12"/>
+                                    </StackPanel>
+                                </StackPanel>
+                                <TextBlock x:Name="DebloatNo7z" Visibility="Collapsed" Foreground="{DynamicResource TempWarn}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,8">
+                                    Precisa do 7-Zip para abrir o pacote do driver. <Hyperlink Click="BtnDebloat7z_Click">Instalar o 7-Zip (winget)</Hyperlink>
+                                </TextBlock>
+                                <StackPanel x:Name="DebloatRows"/>
+                                <WrapPanel Margin="0,8,0,0">
+                                    <Button x:Name="BtnDebloatLatest" Style="{StaticResource PrimaryButton}" Content="Baixar o NVIDIA mais recente e instalar enxuto" Padding="16,8" Margin="0,0,10,8" Click="BtnDebloatLatest_Click"/>
+                                    <Button x:Name="BtnDebloatFile" Style="{StaticResource OutlineButton}" Content="Escolher o instalador…" Padding="14,8" Margin="0,0,10,8" Click="BtnDebloatFile_Click"
+                                            ToolTip="Use um instalador de driver NVIDIA, AMD ou Intel que você já baixou"/>
+                                    <Button x:Name="BtnDebloatUndo" Style="{StaticResource OutlineButton}" Content="Desfazer as limpezas" Padding="14,8" Margin="0,0,10,8" Visibility="Collapsed" Click="BtnDebloatUndo_Click"
+                                            ToolTip="Reativa os serviços e as entradas de inicialização que a instalação enxuta desligou"/>
+                                </WrapPanel>
+                                <TextBlock x:Name="DebloatStatus" Foreground="{DynamicResource Accent}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
                         <Border Style="{StaticResource CardBorder}" Margin="0,0,0,14">
                             <StackPanel>
                                 <TextBlock Text="PLACA DE VÍDEO" Style="{StaticResource Label}"/>

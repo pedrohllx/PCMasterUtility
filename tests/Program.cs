@@ -104,6 +104,12 @@ Test("Binary (hex) settings apply and restore like DWORDs", () => {
     engine.Enable(bin); Assert(engine.Matches(bin)); Assert(fake.Read(bin.Settings[0]).Kind == 3);
     engine.Restore(bin); Assert(bin.Settings.Select(fake.Read).SequenceEqual(before));
 });
+Test("Remove settings delete the value and restore brings it back", () => {
+    var run = new Module("rm-test", "t", "c", "d", "s", new[] { new Setting("HKCU", @"Software\Fake\Run", "AMDNoiseSuppression", 0, Remove: true) });
+    fake.Values[run.Settings[0]] = new(true, 1, "\"C:\\\\amd.exe\"");
+    var engine = Engine("remove"); engine.Enable(run); Assert(engine.Matches(run)); Assert(!fake.Read(run.Settings[0]).Exists);
+    engine.Restore(run); Assert(fake.Read(run.Settings[0]) == new SavedValue(true, 1, "\"C:\\\\amd.exe\""));
+});
 Test("Real registry roundtrip only inside isolated test key", () => {
     var path = @"Software\PcismoMaster.Tests\" + Guid.NewGuid();
     var setting = new Setting("HKCU", path, "Sample", 0); var store = new RegistryStore();

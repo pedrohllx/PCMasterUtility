@@ -4,6 +4,12 @@ A numeração segue **SemVer** (`MAJOR.MINOR.PATCH`). Regras e processo em [docs
 
 ## Em desenvolvimento
 
+- **Drivers · Instalação enxuta do driver (debloat)** (o "5 Graphics/4 Driver Debloat Install & Settings" do Ultimate; os ajustes do script já estão no cartão de configurações recomendadas):
+  - NVIDIA: abre o pacote com o 7-Zip, tira os componentes marcados (telemetria, NVIDIA App, ShadowPlay, containers, nView, FrameView…) e instala em silêncio e limpo. Baixa o mais recente (assinatura conferida) ou usa um instalador seu.
+  - AMD e Intel: instalador escolhido por você (assinatura da AMD/Intel conferida, fabricante detectado pelo pacote), extras desligados no pacote e limpezas depois de instalar.
+  - **Cada componente é opcional** e o que quebra algo vem desmarcado com o motivo: áudio HDMI/DisplayPort, PhysX, DLDSR, Dynamic Boost de notebooks, microfone/caixas de notebooks AMD, HDCP e firmware da Intel.
+  - Serviços são **desativados com backup** em vez de apagados (`sc delete` do script) e entradas de inicialização saem com backup: botão **Desfazer as limpezas**.
+  - Sem 7-Zip, oferece instalar pelo winget. Painel de Controle NVIDIA continua vindo da Microsoft Store. Sem reinício automático.
 - **Drivers · Instalar driver e configurações recomendadas** (o "5 Graphics/3 Driver Updated Install & Settings" do Ultimate):
   - **Instalar driver NVIDIA (silencioso e limpo)**: download oficial com assinatura conferida, instalação sem telas (`-s -noreboot -noeula -clean`), sem 7-Zip; se faltar o Painel de Controle NVIDIA, abre a página dele na Microsoft Store.
   - **Configurações recomendadas** em interruptores com selo SEGURO/AVANÇADO, só dos fabricantes presentes no PC, **cada uma com backup e desfazer** (o script não guardava nada): NVIDIA (PhysX na GPU, menu de desenvolvedor, contadores de desempenho, sem ícone na bandeja, nitidez clássica), AMD (Anti-Lag, VSync off, texturas em desempenho, tesselação, Vari-Bright, Adrenalin sem notificações), Intel (VSync off, baixa latência, VRR global off) e Windows (gerenciamento automático de cor off, modo MSI, todos os ícones da bandeja).

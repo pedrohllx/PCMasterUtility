@@ -24,6 +24,7 @@ public partial class MainWindow
         var vendors = await Task.Run(() => DriverManager.ReadGpus().Select(g => g.Vendor.ToLowerInvariant()).Where(v => v.Length > 0).Distinct().ToList());
         bool nvidia = vendors.Contains("nvidia");
         GfxNvInstallRow.Visibility = nvidia ? Visibility.Visible : Visibility.Collapsed;
+        if (DebloatRows.Children.Count == 0) InitDebloat(vendors);
         var applied = await Task.Run(() => GraphicsTweaks.All.ToDictionary(t => t.Id, GraphicsTweaks.IsApplied));
         bool firstTime = !applied.Values.Any(x => x) && !GraphicsTweaks.DrsApplied(DrsNip) && !GraphicsTweaks.DrsApplied(DrsGsync);
 
@@ -51,7 +52,7 @@ public partial class MainWindow
     }
 
     /// <summary>Linha com título, selo SEGURO/AVANÇADO (e APLICADO), descrição e o interruptor.</summary>
-    private void GfxRow(string id, string title, bool advanced, string desc, bool isApplied, bool defaultOn)
+    private void GfxRow(string id, string title, bool advanced, string desc, bool isApplied, bool defaultOn, Panel? target = null)
     {
         var grid = new Grid { Margin = new Thickness(0, 0, 0, 12) };
         grid.ColumnDefinitions.Add(new ColumnDefinition());
@@ -76,7 +77,7 @@ public partial class MainWindow
         var sw = new CheckBox { VerticalAlignment = VerticalAlignment.Center, IsChecked = isApplied || defaultOn, Tag = isApplied };
         Grid.SetColumn(sw, 1);
         grid.Children.Add(sw);
-        GfxRows.Children.Add(grid);
+        (target ?? GfxRows).Children.Add(grid);
         _gfxToggles[id] = sw;
     }
 
