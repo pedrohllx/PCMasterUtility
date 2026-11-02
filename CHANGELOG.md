@@ -2,6 +2,12 @@
 
 A numeração segue **SemVer** (`MAJOR.MINOR.PATCH`). Regras e processo em [docs/projeto/ATUALIZACOES.md](docs/projeto/ATUALIZACOES.md).
 
+## Em desenvolvimento
+
+- **Aba Sensores no formato do HWiNFO**: um bloco por dispositivo (CPU, GPU, memória, placa-mãe, discos, rede) na ordem de detecção, com cabeçalho que recolhe e expande; colunas **Sensor · Atual · Mínimo · Máximo · Média**; linhas compactas; botões **Zerar mín./máx./média**, **Recolher tudo** e **Expandir tudo**. A busca procura por sensor, dispositivo ou tipo (ex.: "temperatura").
+- Mínimo, máximo e média passam a ser calculados pelo app desde a abertura (ou o último "zerar"), como no HWiNFO.
+- Corrigida a tabela de sensores embaralhando linhas e cabeçalhos ao rolar (virtualização em modo de reciclagem com agrupamento, introduzida na 0.3.1).
+
 ## 0.3.1
 
 - **Desempenho e consumo** (o app fica aberto junto com o jogo):

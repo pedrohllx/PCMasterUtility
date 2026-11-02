@@ -77,15 +77,22 @@ public sealed class SensorMonitor : IDisposable
                     Category = SensorRow.CategoryName(r.Sensor.SensorType),
                     Name = r.Sensor.Name,
                     Type = r.Sensor.SensorType,
-                    HardwareType = r.Hw.HardwareType
+                    HardwareType = r.Hw.HardwareType,
+                    HwIndex = _hwOrder.TryGetValue(r.Hw.Name, out int hi) ? hi : (_hwOrder[r.Hw.Name] = _hwOrder.Count),
+                    Index = _index.Count
                 };
                 _index[id] = row;
                 Rows.Add(row);
             }
             _bySensor[r.Sensor] = row;
         }
-        row.Update(r.Value, r.Min, r.Max);
+        row.Update(r.Value);
     }
+
+    private readonly Dictionary<string, int> _hwOrder = new();
+
+    /// <summary>Zera mínimo, máximo e média de todos os sensores.</summary>
+    public void ResetStats() { foreach (var row in Rows) row.Reset(); }
 
     /// <summary>Temperatura principal da CPU: Package (Intel) / Tctl-Tdie (AMD), senão a maior entre os núcleos.</summary>
     public float? CpuTemperature

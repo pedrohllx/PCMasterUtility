@@ -1201,26 +1201,66 @@
                         <TextBox x:Name="SensorSearch" Width="260" HorizontalAlignment="Right" VerticalAlignment="Center"
                                  Tag="Buscar sensor ou hardware…" TextChanged="SensorSearch_Changed"/>
                     </Grid>
-                    <WrapPanel x:Name="CategoryChips" Grid.Row="1" Margin="0,0,0,14"/>
-                    <Border Grid.Row="2" Style="{StaticResource CardBorder}" Padding="6,14,6,6">
+                    <!-- Barra como a do HWiNFO: zerar mín./máx./média e recolher/expandir os dispositivos -->
+                    <WrapPanel Grid.Row="1" Margin="0,0,0,10">
+                        <Button Style="{StaticResource OutlineButton}" Content="ZERAR MÍN. / MÁX. / MÉDIA" Padding="12,6" FontSize="11"
+                                Margin="0,0,8,0" Click="BtnSensorReset_Click" ToolTip="Recomeça mínimo, máximo e média a partir de agora"/>
+                        <Button Style="{StaticResource OutlineButton}" Content="RECOLHER TUDO" Padding="12,6" FontSize="11"
+                                Margin="0,0,8,0" Click="BtnSensorCollapse_Click"/>
+                        <Button Style="{StaticResource OutlineButton}" Content="EXPANDIR TUDO" Padding="12,6" FontSize="11"
+                                Click="BtnSensorExpand_Click"/>
+                    </WrapPanel>
+                    <Border Grid.Row="2" Style="{StaticResource CardBorder}" Padding="0,8,0,0">
                         <DataGrid x:Name="SensorGrid" AutoGenerateColumns="False" IsReadOnly="True"
-                                  CanUserResizeColumns="False" EnableRowVirtualization="True"
-                                  VirtualizingPanel.IsVirtualizingWhenGrouping="True" VirtualizingPanel.VirtualizationMode="Recycling">
+                                  CanUserResizeColumns="True" CanUserSortColumns="False" MinRowHeight="22" FontSize="12.5"
+                                  GridLinesVisibility="None" SelectionUnit="FullRow"
+                                  EnableRowVirtualization="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True"
+                                  VirtualizingPanel.VirtualizationMode="Standard" VirtualizingPanel.ScrollUnit="Pixel">
                             <DataGrid.GroupStyle>
+                                <!-- Um bloco por dispositivo, com cabeçalho que recolhe e expande (como no HWiNFO) -->
                                 <GroupStyle>
-                                    <GroupStyle.HeaderTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold" Margin="12,22,0,8"/>
-                                        </DataTemplate>
-                                    </GroupStyle.HeaderTemplate>
+                                    <GroupStyle.ContainerStyle>
+                                        <Style TargetType="GroupItem">
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="GroupItem">
+                                                        <StackPanel>
+                                                            <ToggleButton x:Name="Toggle" IsChecked="True" Focusable="False" Cursor="Hand"
+                                                                          Loaded="SensorGroupToggle_Loaded" Click="SensorGroupToggle_Click">
+                                                                <ToggleButton.Template>
+                                                                    <ControlTemplate TargetType="ToggleButton">
+                                                                        <Border Background="{DynamicResource Hover}" BorderBrush="{DynamicResource Line}"
+                                                                                BorderThickness="0,1,0,1" Padding="10,5" Margin="0,6,0,0">
+                                                                            <StackPanel Orientation="Horizontal">
+                                                                                <TextBlock x:Name="Arrow" Text="▾" Width="16" Foreground="{DynamicResource Muted}"/>
+                                                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="{DynamicResource Accent}"/>
+                                                                                <TextBlock Text="{Binding ItemCount, StringFormat=' · {0} sensores'}" FontSize="11"
+                                                                                           Foreground="{DynamicResource Muted}" VerticalAlignment="Center"/>
+                                                                            </StackPanel>
+                                                                        </Border>
+                                                                        <ControlTemplate.Triggers>
+                                                                            <Trigger Property="IsChecked" Value="False">
+                                                                                <Setter TargetName="Arrow" Property="Text" Value="▸"/>
+                                                                            </Trigger>
+                                                                        </ControlTemplate.Triggers>
+                                                                    </ControlTemplate>
+                                                                </ToggleButton.Template>
+                                                            </ToggleButton>
+                                                            <ItemsPresenter Visibility="{Binding IsChecked, ElementName=Toggle, Converter={StaticResource BoolVis}}"/>
+                                                        </StackPanel>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </GroupStyle.ContainerStyle>
                                 </GroupStyle>
                             </DataGrid.GroupStyle>
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="SENSOR" Binding="{Binding Name}" Width="*"/>
-                                <DataGridTextColumn Header="TIPO" Binding="{Binding Category}" Width="130" ElementStyle="{StaticResource MutedCell}"/>
-                                <DataGridTextColumn Header="VALOR" Binding="{Binding Value}" Width="130" ElementStyle="{StaticResource MonoCell}"/>
-                                <DataGridTextColumn Header="MÍN." Binding="{Binding Min}" Width="120" ElementStyle="{StaticResource MutedMonoCell}"/>
-                                <DataGridTextColumn Header="MÁX." Binding="{Binding Max}" Width="120" ElementStyle="{StaticResource MutedMonoCell}"/>
+                                <DataGridTextColumn Header="ATUAL" Binding="{Binding Value}" Width="120" ElementStyle="{StaticResource MonoCell}"/>
+                                <DataGridTextColumn Header="MÍNIMO" Binding="{Binding Min}" Width="120" ElementStyle="{StaticResource MutedMonoCell}"/>
+                                <DataGridTextColumn Header="MÁXIMO" Binding="{Binding Max}" Width="120" ElementStyle="{StaticResource MutedMonoCell}"/>
+                                <DataGridTextColumn Header="MÉDIA" Binding="{Binding Average}" Width="120" ElementStyle="{StaticResource MutedMonoCell}"/>
                             </DataGrid.Columns>
                         </DataGrid>
                     </Border>

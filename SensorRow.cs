@@ -13,7 +13,13 @@ public class SensorRow : INotifyPropertyChanged
     public SensorType Type { get; init; }
     public HardwareType HardwareType { get; init; }
 
+    /// <summary>Posição do dispositivo e do sensor na ordem em que o hardware foi detectado (ordenação da tabela).</summary>
+    public int HwIndex { get; init; }
+    public int Index { get; init; }
+
     private float? _value, _min, _max;
+    private double _sum;
+    private long _count;
     public float? RawValue => _value;
 
     /// <summary>Ordem de exibição por tipo (clocks e temperaturas primeiro, como no GPU-Z).</summary>
@@ -26,15 +32,29 @@ public class SensorRow : INotifyPropertyChanged
     public string Value => Format(_value);
     public string Min => Format(_min);
     public string Max => Format(_max);
+    public string Average => Format(_count > 0 ? (float)(_sum / _count) : null);
 
-    private static readonly PropertyChangedEventArgs ValueArgs = new(nameof(Value)), MinArgs = new(nameof(Min)), MaxArgs = new(nameof(Max));
+    private static readonly PropertyChangedEventArgs ValueArgs = new(nameof(Value)), MinArgs = new(nameof(Min)),
+        MaxArgs = new(nameof(Max)), AvgArgs = new(nameof(Average));
 
-    /// <summary>Atualiza os valores e avisa a tela só do que mudou (centenas de sensores por segundo).</summary>
-    public void Update(float? value, float? min, float? max)
+    /// <summary>Nova leitura: o app guarda mínimo, máximo e média desde a abertura (ou o último "zerar"), como o
+    /// HWiNFO, e avisa a tela só do que mudou (centenas de sensores por segundo).</summary>
+    public void Update(float? value)
     {
         if (_value != value) { _value = value; PropertyChanged?.Invoke(this, ValueArgs); }
-        if (_min != min) { _min = min; PropertyChanged?.Invoke(this, MinArgs); }
-        if (_max != max) { _max = max; PropertyChanged?.Invoke(this, MaxArgs); }
+        if (value is not float v || float.IsNaN(v)) return;
+        if (_min is not float lo || v < lo) { _min = v; PropertyChanged?.Invoke(this, MinArgs); }
+        if (_max is not float hi || v > hi) { _max = v; PropertyChanged?.Invoke(this, MaxArgs); }
+        string before = Average;
+        _sum += v; _count++;
+        if (Average != before) PropertyChanged?.Invoke(this, AvgArgs);
+    }
+
+    /// <summary>Zera mínimo, máximo e média (o botão de relógio do HWiNFO).</summary>
+    public void Reset()
+    {
+        _min = _max = _value; _sum = _value ?? 0; _count = _value.HasValue ? 1 : 0;
+        PropertyChanged?.Invoke(this, MinArgs); PropertyChanged?.Invoke(this, MaxArgs); PropertyChanged?.Invoke(this, AvgArgs);
     }
 
     private string Format(float? v)

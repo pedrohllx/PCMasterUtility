@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Shapes;
@@ -16,7 +17,6 @@ public partial class MainWindow : Window
     private readonly SensorMonitor _monitor;
     private readonly DispatcherTimer _timer;
     private readonly ICollectionView _view;
-    private string? _category;   // filtro por chip (null = todos)
     private string _search = ""; // filtro por texto
 
     // Placa de vídeo
@@ -89,8 +89,12 @@ public partial class MainWindow : Window
 
         // Sensores: a lista começa vazia e é preenchida quando a detecção do hardware termina (LoadHardwareAsync).
         _monitor = new SensorMonitor();
-        _view = CollectionViewSource.GetDefaultView(_monitor.Rows);
+        // Como no HWiNFO: um bloco por dispositivo, na ordem de detecção, e dentro dele clocks, temperaturas, cargas…
+        _view = new ListCollectionView(_monitor.Rows);
         _view.GroupDescriptions.Add(new PropertyGroupDescription(nameof(SensorRow.Hardware)));
+        _view.SortDescriptions.Add(new SortDescription(nameof(SensorRow.HwIndex), ListSortDirection.Ascending));
+        _view.SortDescriptions.Add(new SortDescription(nameof(SensorRow.Order), ListSortDirection.Ascending));
+        _view.SortDescriptions.Add(new SortDescription(nameof(SensorRow.Index), ListSortDirection.Ascending));
         SensorGrid.ItemsSource = _view;
         SystemSub.Text = "Lendo informações do sistema…";
         StatusText.Text = "Detectando o hardware…";
@@ -168,9 +172,6 @@ public partial class MainWindow : Window
             catch (Exception ex) { StatusText.Text = $"Sensores indisponíveis: {ex.Message}"; return; }
             await _monitor.RefreshAsync();
             UpdateCpuSensorWarning();
-            AddChip("Todos", null, isChecked: true);
-            foreach (var c in _monitor.Rows.Select(r => r.Category).Distinct().OrderBy(x => x))
-                AddChip(c, c);
             UpdateDashboard();
         }
 
@@ -1372,38 +1373,55 @@ public partial class MainWindow : Window
 
     // ---------------- Sensores ----------------
 
-    private void AddChip(string label, string? category, bool isChecked = false)
-    {
-        var chip = new RadioButton
-        {
-            Content = label,
-            GroupName = "Category",
-            Style = (Style)FindResource("Chip"),
-            IsChecked = isChecked
-        };
-        chip.Checked += (_, _) => { _category = category; ApplySensorFilter(); };
-        CategoryChips.Children.Add(chip);
-    }
-
     private void SensorSearch_Changed(object sender, TextChangedEventArgs e)
     {
         _search = SensorSearch.Text.Trim();
         ApplySensorFilter();
     }
 
+    /// <summary>Busca por nome do sensor, dispositivo ou tipo (ex.: "temperatura", "GPU", "Core").</summary>
     private void ApplySensorFilter()
     {
         if (_view == null) return;
-        if (_category == null && _search.Length == 0) { _view.Filter = null; return; }
+        if (_search.Length == 0) { _view.Filter = null; return; }
         _view.Filter = o =>
         {
             var r = (SensorRow)o;
-            return (_category == null || r.Category == _category)
-                && (_search.Length == 0
-                    || r.Name.Contains(_search, StringComparison.OrdinalIgnoreCase)
-                    || r.Hardware.Contains(_search, StringComparison.OrdinalIgnoreCase));
+            return r.Name.Contains(_search, StringComparison.OrdinalIgnoreCase)
+                || r.Hardware.Contains(_search, StringComparison.OrdinalIgnoreCase)
+                || r.Category.Contains(_search, StringComparison.OrdinalIgnoreCase);
         };
     }
+
+    // Dispositivos recolhidos: guardados por nome, porque a tabela recria os cabeçalhos ao rolar.
+    private readonly HashSet<string> _sensorCollapsed = new();
+
+    private void SensorGroupToggle_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is ToggleButton { DataContext: CollectionViewGroup g } t)
+            t.IsChecked = !_sensorCollapsed.Contains(g.Name?.ToString() ?? "");
+    }
+
+    private void SensorGroupToggle_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not ToggleButton { DataContext: CollectionViewGroup g } t) return;
+        string name = g.Name?.ToString() ?? "";
+        if (t.IsChecked == true) _sensorCollapsed.Remove(name); else _sensorCollapsed.Add(name);
+    }
+
+    private void BtnSensorCollapse_Click(object sender, RoutedEventArgs e)
+    {
+        foreach (var name in _monitor.Rows.Select(r => r.Hardware).Distinct()) _sensorCollapsed.Add(name);
+        _view.Refresh();
+    }
+
+    private void BtnSensorExpand_Click(object sender, RoutedEventArgs e)
+    {
+        _sensorCollapsed.Clear();
+        _view.Refresh();
+    }
+
+    private void BtnSensorReset_Click(object sender, RoutedEventArgs e) => _monitor.ResetStats();
 
     // ---------------- Stress test ----------------
 
