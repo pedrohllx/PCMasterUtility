@@ -33,7 +33,11 @@ public partial class MainWindow
             DduStatus.Text = "Limpeza feita. Instale o driver baixado antes da limpeza (botão acima) ou use VERIFICAR TUDO para baixar o mais recente.";
     }
 
-    private void DduLogLine(string s) => DduLog.Text = (DduLog.Text.Length > 0 ? DduLog.Text + "\n" : "") + s;
+    private void DduLogLine(string s)
+    {
+        DduLog.Text = (DduLog.Text.Length > 0 ? DduLog.Text + "\n" : "") + s;
+        DriverClean.Log(s);
+    }
 
     private void BtnDduLocal_Click(object sender, RoutedEventArgs e)
     {
@@ -68,20 +72,27 @@ public partial class MainWindow
         try
         {
             // 1) Driver novo baixado antes (opcional): sem ele, o PC fica sem driver até ter internet e baixar de novo.
+            L.Report($"Início: {(o.Auto ? "automático" : "manual")}, placas: {o.Gpus}, áudio: {o.Audio}, bloquear Windows Update: {o.BlockWu}.");
             if (DduPreDownload.IsChecked == true && o.Gpus is "nvidia" or "all")
             {
-                var g = _drvGpus.FirstOrDefault(x => x.Vendor == "NVIDIA") ?? DriverManager.ReadGpus().FirstOrDefault(x => x.Vendor == "NVIDIA");
-                if (g != null)
+                // Falhar aqui não impede a limpeza: o driver pode ser baixado depois.
+                try
                 {
-                    if (g.DownloadUrl.Length == 0) { L.Report("Procurando o driver NVIDIA mais recente…"); await DriverManager.CheckNvidiaAsync(g, false, CancellationToken.None); }
-                    if (g.DownloadUrl.Length > 0)
+                    var g = _drvGpus.FirstOrDefault(x => x.Vendor == "NVIDIA") ?? await Task.Run(() => DriverManager.ReadGpus().FirstOrDefault(x => x.Vendor == "NVIDIA"));
+                    if (g != null)
                     {
-                        string file = await DriverManager.DownloadAsync(g, (t, _) => DduStatus.Text = t, CancellationToken.None);
-                        _settings.DduDriverFile = file; _settings.Save();
-                        L.Report($"Driver NVIDIA {g.Latest} baixado: {file}");
+                        if (g.DownloadUrl.Length == 0) { L.Report("Procurando o driver NVIDIA mais recente…"); await DriverManager.CheckNvidiaAsync(g, false, CancellationToken.None); }
+                        if (g.DownloadUrl.Length > 0)
+                        {
+                            L.Report($"Baixando o driver NVIDIA {g.Latest} (pode levar alguns minutos)…");
+                            string file = await DriverManager.DownloadAsync(g, (t, _) => DduStatus.Text = t, CancellationToken.None);
+                            _settings.DduDriverFile = file; _settings.Save();
+                            L.Report($"Driver NVIDIA {g.Latest} baixado: {file}");
+                        }
+                        else L.Report("Não achei o driver NVIDIA mais recente agora; depois use VERIFICAR TUDO.");
                     }
-                    else L.Report("Não achei o driver NVIDIA mais recente agora; depois use VERIFICAR TUDO.");
                 }
+                catch (Exception ex) { L.Report("Não deu para baixar o driver antes (" + ex.Message + "); a limpeza continua, baixe depois."); }
             }
 
             // 2) DDU baixado, conferido, extraído e configurado.
@@ -89,8 +100,13 @@ public partial class MainWindow
             string exe = await Task.Run(() => DriverClean.PrepareAsync(o, _dduLocalSetup, s => L.Report(s), CancellationToken.None));
 
             // 3) Ponto de restauração.
-            var ctx = new Maintenance.Ctx(log, CancellationToken.None);
-            if (await Maintenance.CreateRestorePoint(ctx, "Limpeza do driver de vídeo") is string why
+            DduStatus.Text = "Criando o ponto de restauração (até 3 minutos)…";
+            using var rpCts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+            var ctx = new Maintenance.Ctx(log, rpCts.Token);
+            string? why;
+            try { why = await Maintenance.CreateRestorePoint(ctx, "Limpeza do driver de vídeo"); }
+            catch (OperationCanceledException) { why = "o Windows demorou mais de 3 minutos para criar"; }
+            if (why != null
                 && MessageBox.Show(this, $"Não foi possível criar o ponto de restauração: {why}.\n\nContinuar mesmo assim?", "Limpeza do driver de vídeo",
                                    MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
             {
@@ -107,15 +123,21 @@ public partial class MainWindow
             }
 
             // 5) Modo de segurança + reinício com contagem regressiva.
+            DduStatus.Text = "Programando o modo de segurança…";
             await Task.Run(() => DriverClean.ScheduleSafeMode(o, exe));
             scheduled = true;
             L.Report("Modo de segurança programado. Atalho de emergência criado na Área de Trabalho.");
+            await Task.Run(() => DriverClean.Restart(32));
+            L.Report("Reinício agendado para daqui a 30 s.");
             StartDduCountdown(30);
         }
         catch (Exception ex)
         {
             if (scheduled) try { DriverClean.Unschedule(); } catch { }
             DduStatus.Text = "Não foi possível preparar a limpeza: " + ex.Message;
+            L.Report("ERRO: " + ex);
+            MessageBox.Show(this, $"A limpeza não começou: {ex.Message}\n\nNada foi alterado no boot. O registro completo está em:\n{DriverClean.LogFile}",
+                "Limpeza do driver de vídeo", MessageBoxButton.OK, MessageBoxImage.Error);
         }
         finally
         {
@@ -130,7 +152,6 @@ public partial class MainWindow
         int left = seconds;
         BtnDduCancel.Visibility = Visibility.Visible;
         DduStatus.Text = $"Reiniciando no modo de segurança em {left} s… Salve e feche seus programas.";
-        DriverClean.Restart(seconds + 2); // o Windows também mostra o aviso; "Cancelar reinício" desfaz tudo
         _dduCountdown = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _dduCountdown.Tick += (_, _) =>
         {
