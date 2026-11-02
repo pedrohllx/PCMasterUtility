@@ -18,6 +18,7 @@ public partial class MainWindow
     private List<NpiProfileVm> _nvcpProfiles = new();
     private readonly List<(PanelSetting Setting, ComboBox Box, int Original)> _nvcpRows = new();
     private bool _nvcpHybrid;
+    private List<(int DeviceId, string Name)> _nvcpGpus = new();
 
     private async void InitNvcp()
     {
@@ -34,6 +35,7 @@ public partial class MainWindow
             var (baseName, list, hybrid) = await Task.Run(() =>
             {
                 var (b, l) = ProfileInspector.LoadProfiles();
+                _nvcpGpus = DriverManager.ReadGpus().Select(g => (g.DeviceId, g.GpuName)).ToList();
                 return (b, l, GpuDetect.DetectNvidia()?.Hybrid == true);
             });
             _nvcpBase = baseName;
@@ -102,9 +104,13 @@ public partial class MainWindow
     /// <summary>Linha: nome (com a explicação embaixo), lista de opções e de onde vem o valor.</summary>
     private void NvcpRow(PanelState st, bool global)
     {
+        if (st.Setting.Info) { NvcpInfoRow(st.Setting); return; }
         var items = new List<NvcpItem>();
-        string inherited = st.Current is { } c && !st.SetHere ? $" ({c.Label})" : "";
-        items.Add(new NvcpItem((global ? "Padrão do driver" : st.Predefined ? "Padrão da NVIDIA para este jogo" : "Usar a configuração global") + inherited, null));
+        string? textNow = st.Setting.Text ? NvidiaPanel.Describe(st.Setting, st.TextValue, _nvcpGpus) : null;
+        string inherited = st.SetHere ? "" : st.Current is { } c ? $" ({c.Label})" : textNow is { Length: > 0 } t && t != st.Setting.AutoLabel ? $" ({t})" : "";
+        string auto = global ? st.Setting.AutoLabel ?? "Padrão do driver" : st.Predefined ? "Padrão da NVIDIA para este jogo" : "Usar a configuração global";
+        items.Add(new NvcpItem(auto + inherited, null));
+        if (st.Setting.Text && st.SetHere) items.Add(new NvcpItem(textNow!, null, Keep: true));
         IEnumerable<PanelChoice> choices = st.Setting.Fps
             ? new[] { 0u }.Concat(NvidiaPanel.FpsPresets).Concat(st.SetHere && st.Raw is uint f && f != 0 && !NvidiaPanel.FpsPresets.Contains(f) ? new[] { f } : Array.Empty<uint>())
                 .OrderBy(x => x).Select(x => NvidiaPanel.FpsChoice(st.Setting.Ids[0], x))
@@ -115,7 +121,7 @@ public partial class MainWindow
         int selected = 0;
         if (st.SetHere)
         {
-            int i = st.Current == null ? -1 : items.FindIndex(x => x.Choice is { } ch && ch.Writes.SequenceEqual(st.Current.Writes));
+            int i = st.Setting.Text ? 1 : st.Current == null ? -1 : items.FindIndex(x => x.Choice is { } ch && ch.Writes.SequenceEqual(st.Current.Writes));
             if (i < 0) { items.Insert(1, new NvcpItem($"Personalizado ({(st.Raw is uint r ? $"0x{r:X8}" : "?")})", null, Keep: true)); i = 1; }
             selected = i;
         }
@@ -160,6 +166,28 @@ public partial class MainWindow
         grid.Children.Add(source);
         NvcpRows.Children.Add(grid);
         _nvcpRows.Add((st.Setting, box, selected));
+    }
+
+    /// <summary>Linha só de informação (ex.: DSR, que fica na configuração do monitor) com atalho para o Painel de Controle.</summary>
+    private void NvcpInfoRow(PanelSetting st)
+    {
+        var grid = new Grid { Margin = new Thickness(0, 0, 0, 12) };
+        grid.ColumnDefinitions.Add(new ColumnDefinition());
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(370) });
+        var text = new StackPanel { Margin = new Thickness(0, 0, 14, 0), VerticalAlignment = VerticalAlignment.Center };
+        text.Children.Add(new TextBlock { Text = st.Title, TextWrapping = TextWrapping.Wrap });
+        text.Children.Add(new TextBlock { Text = st.Help, Foreground = (Brush)FindResource("Muted"), FontSize = 11.5, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 0) });
+        grid.Children.Add(text);
+        var open = new Button { Content = "Abrir no Painel de Controle NVIDIA", Style = (Style)FindResource("OutlineButton"), Padding = new Thickness(12, 6, 12, 6),
+            HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center };
+        open.Click += (_, _) =>
+        {
+            try { if (!GraphicsTweaks.OpenNvidiaControlPanel()) NvcpStatus.Text = "O Painel de Controle NVIDIA não está instalado: a página dele na Microsoft Store foi aberta."; }
+            catch (Exception ex) { NvcpStatus.Text = "Não foi possível abrir o Painel de Controle: " + ex.Message; }
+        };
+        Grid.SetColumn(open, 1);
+        grid.Children.Add(open);
+        NvcpRows.Children.Add(grid);
     }
 
     private async void BtnNvcpApply_Click(object sender, RoutedEventArgs e)
