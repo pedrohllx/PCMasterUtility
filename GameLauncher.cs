@@ -201,7 +201,14 @@ public static class GameLauncher
                     game.PriorityClass = p.Priority switch { "high" => ProcessPriorityClass.High, "above" => ProcessPriorityClass.AboveNormal, _ => ProcessPriorityClass.Normal };
                 }
                 catch { }
-                status($"{g.Name} em execução" + (p.Priority != "normal" ? $" · prioridade {(p.Priority == "high" ? "alta" : "acima do normal")}" : "") + ".");
+                // Núcleos da CPU: o Windows só recebe instruções de como agendar o processo (nada muda nos arquivos do jogo).
+                string cores = "";
+                if (CpuTopology.AffinityFor(p) is ulong mask)
+                {
+                    try { game.ProcessorAffinity = (IntPtr)(long)mask; cores = $" · núcleos: {CpuTopology.Describe(mask)}"; }
+                    catch { cores = " · não deu para limitar os núcleos (o anti-cheat pode bloquear)"; }
+                }
+                status($"{g.Name} em execução" + (p.Priority != "normal" ? $" · prioridade {(p.Priority == "high" ? "alta" : "acima do normal")}" : "") + cores + ".");
                 try { await game.WaitForExitAsync(ct); } catch (OperationCanceledException) { throw; } catch { }
                 game.Dispose();
                 game = null;

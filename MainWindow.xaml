@@ -1042,86 +1042,85 @@
                 </ScrollViewer>
 
                 <!-- ===== JOGOS (inicializador) ===== -->
-                <Grid x:Name="PageLauncher" Margin="36,30,36,30" Visibility="Collapsed">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="320"/>
-                        <ColumnDefinition Width="24"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <!-- Lista de jogos -->
-                    <Grid Grid.Column="0">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-                        <StackPanel Grid.Row="0" Margin="0,0,0,14">
-                            <TextBlock Text="JOGOS" Style="{StaticResource H1}"/>
-                            <TextBlock x:Name="LGameCount" Text="Procurando seus jogos…" Style="{StaticResource Sub}" TextWrapping="Wrap"/>
-                        </StackPanel>
-                        <StackPanel Grid.Row="1" Margin="0,0,0,10">
-                            <TextBox x:Name="LGameSearch" Tag="Buscar jogo…" TextChanged="LGameSearch_Changed" Margin="0,0,0,8"/>
-                            <WrapPanel>
-                                <Button x:Name="BtnScanGames" Style="{StaticResource OutlineButton}" Content="ATUALIZAR LISTA" Padding="14,8" Margin="0,0,8,0" Click="BtnScanGames_Click"/>
-                                <Button Style="{StaticResource OutlineButton}" Content="+ ADICIONAR .EXE" Padding="14,8" Click="BtnAddExe_Click"/>
-                            </WrapPanel>
-                        </StackPanel>
-                        <ListBox x:Name="LGameList" Grid.Row="2" ItemContainerStyle="{StaticResource ListNavItem}" SelectionChanged="LGameList_Changed">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
+                <Grid x:Name="PageLauncher" Visibility="Collapsed">
+                    <!-- Biblioteca: cabeçalho, busca e cartões com a capa de cada jogo -->
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="36,30,36,30">
+                            <Grid Margin="0,0,0,20">
+                                <StackPanel Orientation="Horizontal">
+                                    <Border Width="46" Height="46" CornerRadius="12" Background="{DynamicResource AccentGradient}" Margin="0,0,14,0" VerticalAlignment="Top">
+                                        <TextBlock Text="&#xE7FC;" FontFamily="{StaticResource Icons}" FontSize="22" Foreground="{DynamicResource OnAccent}"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
                                     <StackPanel>
-                                        <TextBlock Text="{Binding Name}" FontSize="14" TextTrimming="CharacterEllipsis"/>
-                                        <TextBlock Text="{Binding Subtitle}" FontSize="11" Opacity="0.6"/>
+                                        <TextBlock Text="Jogos" Style="{StaticResource H1}"/>
+                                        <TextBlock Text="Seus jogos instalados, com &quot;Preparar e jogar&quot; e os ajustes individuais de cada um. Os arquivos dos jogos nunca são tocados."
+                                                   Style="{StaticResource Sub}" TextWrapping="Wrap" MaxWidth="640"/>
                                     </StackPanel>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                    </Grid>
-
-                    <!-- Detalhes do jogo -->
-                    <TextBlock x:Name="LEmpty" Grid.Column="2" Text="Escolha um jogo na lista." Foreground="{DynamicResource Muted}" VerticalAlignment="Top" Margin="0,60,0,0"/>
-                    <ScrollViewer x:Name="LDetail" Grid.Column="2" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="0,0,6,0">
-                            <Grid Margin="0,0,0,6">
-                                <StackPanel Margin="0,0,200,0">
-                                    <TextBlock x:Name="LTitle" Style="{StaticResource H1}" TextWrapping="Wrap"/>
-                                    <TextBlock x:Name="LSub" Style="{StaticResource Sub}" TextWrapping="Wrap"/>
                                 </StackPanel>
-                                <Button x:Name="BtnPlay" Style="{StaticResource PrimaryButton}" Content="JOGAR" Padding="40,14" FontSize="16"
-                                        HorizontalAlignment="Right" VerticalAlignment="Top" Click="BtnPlay_Click"/>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
+                                    <TextBox x:Name="LGameSearch" Width="200" Tag="Buscar jogo…" TextChanged="LGameSearch_Changed" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                    <Button Style="{StaticResource OutlineButton}" Content="Adicionar jogo (.exe)…" Padding="14,8" Margin="0,0,10,0" Click="BtnAddExe_Click"/>
+                                    <Button x:Name="BtnScanGames" Style="{StaticResource OutlineButton}" Content="Procurar de novo" Padding="14,8" Click="BtnScanGames_Click"/>
+                                </StackPanel>
                             </Grid>
-                            <TextBlock x:Name="LStatus" Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,0,0,16"/>
+                            <TextBlock x:Name="LStatus" Foreground="{DynamicResource Accent}" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                            <Grid Margin="0,0,0,12">
+                                <TextBlock Text="Meus jogos" FontSize="15" FontWeight="SemiBold"/>
+                                <TextBlock x:Name="LGameCount" Text="Procurando seus jogos…" Foreground="{DynamicResource Muted}" FontSize="12"
+                                           HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                            </Grid>
+                            <WrapPanel x:Name="LGameGrid"/>
+                        </StackPanel>
+                    </ScrollViewer>
 
-                            <!-- Desempenho -->
-                            <Border Style="{StaticResource CardBorder}" Margin="0,0,0,14">
-                                <StackPanel>
-                                    <TextBlock Text="DESEMPENHO" Style="{StaticResource Label}"/>
-                                    <TextBlock Text="Prioridade do processo" Foreground="{DynamicResource Muted}" FontSize="12" Margin="0,8,0,0"/>
-                                    <WrapPanel x:Name="LPriorityPanel" Margin="0,4,0,10">
-                                    <RadioButton Style="{StaticResource Chip}" GroupName="LPriority" Content="Normal" Tag="normal" IsChecked="True" Checked="LProfile_Changed"/>
-                                    <RadioButton Style="{StaticResource Chip}" GroupName="LPriority" Content="Acima do normal" Tag="above" Checked="LProfile_Changed"/>
-                                    <RadioButton Style="{StaticResource Chip}" GroupName="LPriority" Content="Alta" Tag="high" Checked="LProfile_Changed"/>
-                                </WrapPanel>
-                                    <CheckBox x:Name="LChkPlan" Content="Plano de energia Alto desempenho enquanto joga (volta ao normal depois)" Margin="0,0,0,10" Click="LProfile_Changed"/>
-                                    <CheckBox x:Name="LChkGpu" Content="Forçar a placa de vídeo dedicada (configuração gráfica do Windows)" Margin="0,0,0,10" Click="LProfile_Changed"/>
-                                    <CheckBox x:Name="LChkFso" Content="Desativar otimizações de tela cheia do Windows" Margin="0,0,0,12" Click="LProfile_Changed"/>
-                                    <TextBlock x:Name="LExeText" Foreground="{DynamicResource Faint}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,8"/>
-                                    <WrapPanel>
-                                        <Button Style="{StaticResource OutlineButton}" Content="ESCOLHER O .EXE" Padding="14,8" Margin="0,0,8,0" Click="BtnPickExe_Click"/>
-                                        <Button Style="{StaticResource OutlineButton}" Content="PERFIL PARA MAIS FPS" Padding="14,8" Click="BtnRecommended_Click"/>
-                                    </WrapPanel>
-                                    <TextBlock Foreground="{DynamicResource Faint}" FontSize="11" TextWrapping="Wrap" Margin="0,8,0,0">
-                                        Prioridade e plano de energia valem só durante o jogo. As opções de GPU e tela cheia são gravadas para o .exe do jogo no Windows
-                                        (o programa descobre o .exe sozinho; se errar, escolha o certo).
-                                    </TextBlock>
-                                </StackPanel>
-                            </Border>
-
-                            <!-- Gráficos -->
-                            <Border Style="{StaticResource CardBorder}" Margin="0,0,0,14">
-                                <StackPanel>
-                                    <TextBlock Text="GRÁFICOS (ARGUMENTOS DE INICIALIZAÇÃO)" Style="{StaticResource Label}"/>
+                    <!-- Janela "Ajustes do jogo" sobre a biblioteca -->
+                    <Grid x:Name="LOverlay" Visibility="Collapsed" Background="#B3000000">
+                        <Border x:Name="LDialog" Width="660" Background="{DynamicResource Card}" BorderBrush="{DynamicResource LineStrong}" BorderThickness="1"
+                                CornerRadius="12" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,24">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Border Background="{DynamicResource Panel}" CornerRadius="12,12,0,0" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="12,8">
+                                    <Grid>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Image Source="Assets/logo.png" Width="16" Height="16" Margin="0,0,8,0"/>
+                                            <TextBlock x:Name="LDlgTitle" FontSize="12" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                        <Button Style="{StaticResource OutlineButton}" Content="✕" Padding="8,2" FontSize="11" BorderThickness="0"
+                                                HorizontalAlignment="Right" Click="BtnDlgCancel_Click"/>
+                                    </Grid>
+                                </Border>
+                                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                    <StackPanel Margin="24,20,24,8">
+                                        <TextBlock Text="Ajustes específicos do jogo" FontSize="24" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                        <TextBlock x:Name="LDlgDesc" Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                                        <StackPanel x:Name="LPerfRows"/>
+                                        <Border Height="1" Background="{DynamicResource Line}" Margin="0,8,0,10"/>
+                                        <TextBlock Text="Gráficos (gravado no Windows, vale sempre que o jogo abrir)" Foreground="{DynamicResource Muted}" FontSize="12" Margin="0,0,0,6"/>
+                                        <StackPanel x:Name="LGfxRows"/>
+                                        <Border Height="1" Background="{DynamicResource Line}" Margin="0,8,0,12"/>
+                                        <Grid Margin="0,0,0,12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="34"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="&#xE8B7;" FontFamily="{StaticResource Icons}" FontSize="16" Foreground="{DynamicResource Accent}" VerticalAlignment="Top" Margin="0,2,0,0"/>
+                                            <StackPanel Grid.Column="1">
+                                                <TextBlock Text="Executável do jogo" FontWeight="SemiBold"/>
+                                                <TextBlock x:Name="LExeText" Foreground="{DynamicResource Muted}" FontSize="11.5" TextWrapping="Wrap" Margin="0,3,12,0"/>
+                                            </StackPanel>
+                                            <Button Grid.Column="2" Style="{StaticResource OutlineButton}" Content="Trocar .exe" Padding="14,7" FontSize="12"
+                                                    VerticalAlignment="Center" Click="BtnPickExe_Click"/>
+                                        </Grid>
+                                        <!-- Opções que já existiam: argumentos de inicialização, Steam e programas auxiliares -->
+                                        <ToggleButton x:Name="LAdvToggle" Style="{StaticResource NavGroup}" Content="OPÇÕES AVANÇADAS (ARGUMENTOS, STEAM E PROGRAMAS AUXILIARES)" Margin="0,0,0,6"/>
+                                        <StackPanel Visibility="{Binding IsChecked, ElementName=LAdvToggle, Converter={StaticResource BoolVis}}">
+                                            <TextBlock Text="ARGUMENTOS DE INICIALIZAÇÃO" Style="{StaticResource Label}" Margin="0,6,0,0"/>
                                     <TextBlock Text="Modo de janela" Foreground="{DynamicResource Muted}" FontSize="12" Margin="0,8,0,0"/>
                                     <WrapPanel x:Name="LModePanel" Margin="0,4,0,10">
                                     <RadioButton Style="{StaticResource Chip}" GroupName="LMode" Content="Padrão do jogo" Tag="default" IsChecked="True" Checked="LProfile_Changed"/>
@@ -1163,13 +1162,8 @@
                                                 HorizontalAlignment="Left" Padding="20,9" Click="BtnSteamApply_Click"/>
                                     </StackPanel>
                                     <TextBlock x:Name="LGfxNote" Foreground="{DynamicResource Faint}" FontSize="11" TextWrapping="Wrap" Margin="0,8,0,0"/>
-                                </StackPanel>
-                            </Border>
-
-                            <!-- Programas auxiliares -->
-                            <Border Style="{StaticResource CardBorder}" Margin="0,0,0,14">
-                                <StackPanel>
-                                    <TextBlock Text="PROGRAMAS AUXILIARES" Style="{StaticResource Label}"/>
+                                            <Border Height="1" Background="{DynamicResource Line}" Margin="0,14,0,12"/>
+                                            <TextBlock Text="PROGRAMAS AUXILIARES" Style="{StaticResource Label}"/>
                                     <TextBlock Foreground="{DynamicResource Muted}" FontSize="12" TextWrapping="Wrap" Margin="0,6,0,10">
                                         Ferramentas de terceiros que abrem antes do jogo (monitoramento, comandos, mixer de áudio, script...). O JOGOS as abre
                                         sozinho ao clicar em JOGAR e pode fechá-las junto com o jogo. Nada é escrito nas opções da Steam.
@@ -1189,10 +1183,18 @@
                                         <Button Style="{StaticResource OutlineButton}" Content="+ ADICIONAR PROGRAMA" Padding="14,8" Margin="0,0,14,0" Click="BtnAddHelper_Click"/>
                                         <CheckBox x:Name="LHelperClose" Content="Fechar junto com o jogo" IsChecked="True" VerticalAlignment="Center"/>
                                     </WrapPanel>
+                                            <Button Style="{StaticResource OutlineButton}" Content="PERFIL PARA MAIS FPS" Padding="14,8" HorizontalAlignment="Left"
+                                                    Margin="0,14,0,0" Click="BtnRecommended_Click" ToolTip="Liga prioridade alta, Alto desempenho, GPU dedicada e sem otimizações de tela cheia"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </ScrollViewer>
+                                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="24,12,24,18">
+                                    <Button Style="{StaticResource OutlineButton}" Content="Cancelar" Padding="18,9" Margin="0,0,10,0" Click="BtnDlgCancel_Click"/>
+                                    <Button Style="{StaticResource PrimaryButton}" Content="Salvar ajustes" Padding="18,9" Click="BtnDlgSave_Click"/>
                                 </StackPanel>
-                            </Border>
-                        </StackPanel>
-                    </ScrollViewer>
+                            </Grid>
+                        </Border>
+                    </Grid>
                 </Grid>
 
                 <!-- ===== SENSORES ===== -->

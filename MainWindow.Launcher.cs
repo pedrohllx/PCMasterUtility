@@ -1,19 +1,25 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 
 namespace ResetExplode;
 
-/// <summary>Aba RESET JOGOS: lista os jogos instalados, guarda um perfil por jogo e inicia aplicando o perfil.</summary>
+/// <summary>Aba JOGOS · Biblioteca: cartões com a capa de cada jogo, "Preparar e jogar" e a janela de ajustes por jogo.</summary>
 public partial class MainWindow
 {
     private List<LibGame> _libGames = new();
-    private LibGame? _lg;
-    private GameProfile? _lp;
+    private LibGame? _lg;          // jogo da janela de ajustes
+    private GameProfile? _lp;      // cópia em edição (vira o perfil só ao salvar)
     private bool _lLoading, _launcherInited;
     private CancellationTokenSource? _launchCts;
+    private Button? _playingButton;
     private readonly Dictionary<string, string?> _exeGuess = new();
+    private readonly Dictionary<string, ImageSource?> _covers = new();
+    private CheckBox _tCore0 = null!, _tPhys = null!, _tPCore = null!, _tPrio = null!, _tPlan = null!, _tGpu = null!, _tFso = null!;
 
     private static readonly (string Label, string Token, string? Hint)[] ExtraPresets =
     {
@@ -44,10 +50,12 @@ public partial class MainWindow
             };
             LExtraPresets.Children.Add(b);
         }
+        BuildToggleRows();
+        PageLauncher.SizeChanged += (_, _) => LDialog.MaxHeight = Math.Max(300, PageLauncher.ActualHeight - 48);
         _ = ScanGamesAsync();
     }
 
-    // ---------------- Lista ----------------
+    // ---------------- Biblioteca ----------------
 
     private async Task ScanGamesAsync()
     {
@@ -58,10 +66,9 @@ public partial class MainWindow
             var custom = _settings.CustomGames.ToList();
             _libGames = await Task.Run(() => GameLibrary.Scan(custom));
             ApplyGameFilter();
-            var byStore = _libGames.GroupBy(g => g.Store).Select(x => $"{x.Key} {x.Count()}");
             LGameCount.Text = _libGames.Count == 0
-                ? "Nenhum jogo encontrado. Use + ADICIONAR .EXE para incluir um à mão."
-                : $"{_libGames.Count} jogos · {string.Join(" · ", byStore)}";
+                ? "Nenhum jogo encontrado. Use \"Adicionar jogo (.exe)…\"."
+                : $"{_libGames.Count} jogo(s)";
         }
         catch (Exception ex) { LGameCount.Text = "Falhou: " + ex.Message; }
         finally { BtnScanGames.IsEnabled = true; }
@@ -70,15 +77,14 @@ public partial class MainWindow
     private void ApplyGameFilter()
     {
         string q = LGameSearch.Text.Trim();
-        string? keep = _lg?.Key;
-        var list = _libGames.Where(g => q.Length == 0 || g.Name.Contains(q, StringComparison.CurrentCultureIgnoreCase)).ToList();
-        LGameList.ItemsSource = list;
-        if (keep != null) LGameList.SelectedItem = list.FirstOrDefault(g => g.Key == keep);
+        LGameGrid.Children.Clear();
+        foreach (var g in _libGames.Where(g => q.Length == 0 || g.Name.Contains(q, StringComparison.CurrentCultureIgnoreCase)))
+            LGameGrid.Children.Add(GameCard(g));
     }
 
     private void LGameSearch_Changed(object sender, TextChangedEventArgs e)
     {
-        if (LGameList == null) return;
+        if (LGameGrid == null) return;
         ApplyGameFilter();
     }
 
@@ -94,35 +100,193 @@ public partial class MainWindow
             _settings.Save();
         }
         await ScanGamesAsync();
-        LGameList.SelectedItem = (LGameList.ItemsSource as IEnumerable<LibGame>)?.FirstOrDefault(g => g.Store == "Manual" && g.Id == dlg.FileName);
     }
 
-    // ---------------- Perfil ----------------
-
-    private static void SetChip(Panel panel, string tag)
+    /// <summary>Cartão do jogo: capa, nome, loja e os botões "Preparar e jogar" e "Ajustes".</summary>
+    private FrameworkElement GameCard(LibGame g)
     {
-        var chips = panel.Children.OfType<RadioButton>().ToList();
-        var hit = chips.FirstOrDefault(c => (string)c.Tag == tag) ?? chips.FirstOrDefault();
-        if (hit != null) hit.IsChecked = true;
+        const double w = 170, coverH = 240;
+        var cover = new Border { Height = coverH, CornerRadius = new CornerRadius(10, 10, 0, 0), Background = (Brush)FindResource("AccentGradient") };
+        var initials = new TextBlock
+        {
+            Text = string.Concat(g.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(s => char.ToUpperInvariant(s[0]))),
+            FontSize = 44, FontWeight = FontWeights.Bold, Foreground = (Brush)FindResource("OnAccent"), Opacity = 0.85,
+            HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+        };
+        cover.Child = initials;
+        _ = LoadCoverAsync(g, cover);
+
+        var info = new StackPanel { Margin = new Thickness(10, 8, 10, 10) };
+        info.Children.Add(new TextBlock { Text = g.Name.ToUpperInvariant(), FontWeight = FontWeights.SemiBold, FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = g.Name });
+        info.Children.Add(new TextBlock { Text = g.Store.ToUpperInvariant(), FontSize = 10, FontWeight = FontWeights.SemiBold, Foreground = (Brush)FindResource("Accent"), Margin = new Thickness(0, 2, 0, 0) });
+        var body = new StackPanel();
+        body.Children.Add(cover);
+        body.Children.Add(info);
+        var card = new Border
+        {
+            Width = w, CornerRadius = new CornerRadius(10), Background = (Brush)FindResource("Card"),
+            BorderBrush = (Brush)FindResource("Line"), BorderThickness = new Thickness(1), Child = body,
+        };
+
+        var play = new Button { Content = _playingKey == g.Key ? "Parar" : "Preparar e jogar", Style = (Style)FindResource("PrimaryButton"),
+            Padding = new Thickness(10, 6, 10, 6), FontSize = 11.5, Margin = new Thickness(0, 0, 6, 0) };
+        play.Click += (_, _) => PlayGame(g, play);
+        if (_playingKey == g.Key) _playingButton = play;
+        var settings = new Button { Content = "Ajustes", Style = (Style)FindResource("OutlineButton"), Padding = new Thickness(12, 6, 12, 6), FontSize = 11.5 };
+        settings.Click += (_, _) => OpenGameSettings(g);
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 8, 0, 0) };
+        buttons.Children.Add(play);
+        buttons.Children.Add(settings);
+
+        var stack = new StackPanel { Width = w, Margin = new Thickness(0, 0, 16, 20) };
+        stack.Children.Add(card);
+        stack.Children.Add(buttons);
+        return stack;
     }
 
-    private async void LGameList_Changed(object sender, SelectionChangedEventArgs e)
+    /// <summary>Carrega a capa fora da thread da janela, já reduzida ao tamanho do cartão (pouca memória).</summary>
+    private async Task LoadCoverAsync(LibGame g, Border cover)
     {
-        _lg = LGameList.SelectedItem as LibGame;
-        if (_lg == null) { LDetail.Visibility = Visibility.Collapsed; LEmpty.Visibility = Visibility.Visible; _lp = null; return; }
-        LDetail.Visibility = Visibility.Visible;
-        LEmpty.Visibility = Visibility.Collapsed;
+        if (!_covers.TryGetValue(g.Key, out var img))
+        {
+            img = await Task.Run<ImageSource?>(() =>
+            {
+                try
+                {
+                    if (g.CoverPath() is not string path) return null;
+                    var bmp = new BitmapImage();
+                    bmp.BeginInit();
+                    bmp.UriSource = new Uri(path);
+                    bmp.DecodePixelWidth = 340;
+                    bmp.CacheOption = BitmapCacheOption.OnLoad;
+                    bmp.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+                    bmp.EndInit();
+                    bmp.Freeze();
+                    return bmp;
+                }
+                catch { return null; }
+            });
+            _covers[g.Key] = img;
+        }
+        if (img == null) return;
+        var brush = new ImageBrush(img) { Stretch = Stretch.UniformToFill, AlignmentY = AlignmentY.Top };
+        brush.Freeze();
+        cover.Background = brush;
+        cover.Child = null;
+    }
 
-        var g = _lg;
+    // ---------------- Preparar e jogar ----------------
+
+    private string? _playingKey;
+
+    private async void PlayGame(LibGame g, Button button)
+    {
+        if (_launchCts != null)
+        {
+            if (_playingKey == g.Key) _launchCts.Cancel();
+            else LStatus.Text = "Já tem um jogo sendo acompanhado. Clique em \"Parar\" nele antes.";
+            return;
+        }
         if (!_settings.GameProfiles.TryGetValue(g.Key, out var p)) { p = new GameProfile(); _settings.GameProfiles[g.Key] = p; }
+
+        _launchCts = new CancellationTokenSource();
+        _playingKey = g.Key;
+        _playingButton = button;
+        button.Content = "Parar";
+        try
+        {
+            await GameLauncher.RunAsync(g, p,
+                t => Dispatcher.BeginInvoke(new Action(() => LStatus.Text = t)),
+                exe => Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    if (!string.Equals(p.ExePath, exe, StringComparison.OrdinalIgnoreCase))
+                    {
+                        p.ExePath = exe;
+                        try { _settings.Save(); } catch { }
+                    }
+                })),
+                _launchCts.Token);
+        }
+        finally
+        {
+            _launchCts?.Dispose();
+            _launchCts = null;
+            _playingKey = null;
+            if (_playingButton != null) _playingButton.Content = "Preparar e jogar";
+            _playingButton = null;
+        }
+    }
+
+    // ---------------- Janela de ajustes ----------------
+
+    /// <summary>Linhas com ícone, título, selo (SEGURO/AVANÇADO), descrição e o interruptor à direita, como no exemplo.</summary>
+    private void BuildToggleRows()
+    {
+        CheckBox Row(Panel target, string glyph, string title, bool advanced, string desc)
+        {
+            var grid = new Grid { Margin = new Thickness(0, 0, 0, 14) };
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(34) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition());
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            grid.Children.Add(new TextBlock { Text = glyph, FontFamily = (FontFamily)FindResource("Icons"), FontSize = 16, Foreground = (Brush)FindResource("Accent"),
+                VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 2, 0, 0) });
+            var head = new StackPanel { Orientation = Orientation.Horizontal };
+            head.Children.Add(new TextBlock { Text = title, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 10, 0) });
+            var badge = new Border { Style = (Style)FindResource("MaintBadge"), Padding = new Thickness(7, 2, 7, 2),
+                Child = new TextBlock { Text = advanced ? "AVANÇADO" : "SEGURO" } };
+            if (advanced) { badge.Background = new SolidColorBrush(Color.FromArgb(0x26, 0xFF, 0xCF, 0x4D)); TextElement.SetForeground(badge, (Brush)FindResource("TempWarn")); }
+            head.Children.Add(badge);
+            var text = new StackPanel { Margin = new Thickness(0, 0, 16, 0) };
+            text.Children.Add(head);
+            var d = new TextBlock { Text = desc, Foreground = (Brush)FindResource("Muted"), FontSize = 12, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 3, 0, 0) };
+            text.Children.Add(d);
+            Grid.SetColumn(text, 1);
+            grid.Children.Add(text);
+            var sw = new CheckBox { VerticalAlignment = VerticalAlignment.Center, Tag = d };
+            Grid.SetColumn(sw, 2);
+            grid.Children.Add(sw);
+            target.Children.Add(grid);
+            return sw;
+        }
+
+        _tCore0 = Row(LPerfRows, "", "Liberar o núcleo 0", false, "Mantém o jogo fora do núcleo 0, o mais ocupado pelo Windows e pelos drivers.");
+        _tPhys = Row(LPerfRows, "", "Só núcleos físicos (sem SMT/Hyper-Threading)", true,
+            "Usa uma thread por núcleo físico: frametimes mais estáveis em alguns jogos, menos FPS em outros.");
+        _tPCore = Row(LPerfRows, "", "Só núcleos de desempenho (sem E-cores)", false, "Deixa o jogo só nos P-cores das CPUs Intel híbridas.");
+        _tPrio = Row(LPerfRows, "", "Prioridade alta", false, "Pede ao Windows mais tempo de processador para o jogo.");
+        _tPlan = Row(LPerfRows, "", "Plano de energia Alto desempenho", false, "Só enquanto o jogo estiver aberto; depois volta ao plano anterior.");
+        _tGpu = Row(LGfxRows, "", "Placa de vídeo dedicada", false, "Força a GPU de alto desempenho neste jogo (útil em notebooks).");
+        _tFso = Row(LGfxRows, "", "Desativar otimizações de tela cheia", true,
+            "Desliga o modo de tela cheia otimizada do Windows para este .exe. Pode reduzir o atraso em alguns jogos e piorar em outros.");
+
+        if (!CpuTopology.IsHybrid)
+        {
+            _tPCore.IsEnabled = false;
+            ((TextBlock)_tPCore.Tag).Text = "Seu processador não tem E-cores; não se aplica.";
+        }
+        if (!CpuTopology.HasSmt)
+        {
+            _tPhys.IsEnabled = false;
+            ((TextBlock)_tPhys.Tag).Text = "Seu processador não tem SMT/Hyper-Threading; não se aplica.";
+        }
+    }
+
+    private async void OpenGameSettings(LibGame g)
+    {
+        _lg = g;
+        _lp = (_settings.GameProfiles.TryGetValue(g.Key, out var saved) ? saved : new GameProfile()).Clone();
+        var p = _lp;
         _lLoading = true;
-        _lp = p;
-        LTitle.Text = g.Name;
-        LSub.Text = $"{g.Store} · {g.InstallDir}";
-        SetChip(LPriorityPanel, p.Priority);
-        LChkPlan.IsChecked = p.HighPerfPlan;
-        LChkGpu.IsChecked = p.GpuHigh;
-        LChkFso.IsChecked = p.DisableFso;
+        LDlgTitle.Text = $"Ajustes do jogo: {g.Name}";
+        LDlgDesc.Text = $"Valem para {g.Name} quando aberto por \"Preparar e jogar\". Nada é alterado nos arquivos do jogo nem na memória dele: " +
+                        "o Windows só recebe instruções de como agendar o processo.";
+        _tCore0.IsChecked = p.FreeCore0;
+        _tPhys.IsChecked = p.PhysicalOnly && _tPhys.IsEnabled;
+        _tPCore.IsChecked = p.PCoresOnly && _tPCore.IsEnabled;
+        _tPrio.IsChecked = p.Priority == "high";
+        _tPlan.IsChecked = p.HighPerfPlan;
+        _tGpu.IsChecked = p.GpuHigh;
+        _tFso.IsChecked = p.DisableFso;
         SetChip(LModePanel, p.WinMode);
         SetChip(LResPanel, p.Res);
         SetChip(LHzPanel, p.Hz.ToString());
@@ -133,14 +297,21 @@ public partial class MainWindow
         LSteamBox.Visibility = g.IsSteam ? Visibility.Visible : Visibility.Collapsed;
         LSteamNow.Text = g.IsSteam ? "Opções atuais na Steam: " + (SteamInfo.GetLaunchOptions(g.Id) is { Length: > 0 } cur ? cur : "(nenhuma)") : "";
         LGfxNote.Text = g.IsSteam
-            ? "Os argumentos só passam a valer na Steam depois de APLICAR NAS OPÇÕES DA STEAM (a Steam é fechada nessa hora). Depois, o JOGAR abre pela Steam normalmente."
+            ? "Os argumentos só passam a valer na Steam depois de APLICAR NAS OPÇÕES DA STEAM (a Steam é fechada nessa hora)."
             : g.LaunchUri != null
-                ? "Esta loja abre o jogo por um atalho que não aceita argumentos: use as opções de inicialização da própria loja. Desempenho e programas auxiliares funcionam normalmente."
-                : "Os argumentos são enviados direto ao .exe quando você clica em JOGAR.";
-        LStatus.Text = "";
+                ? "Esta loja abre o jogo por um atalho que não aceita argumentos: use as opções de inicialização da própria loja."
+                : "Os argumentos são enviados direto ao .exe em \"Preparar e jogar\".";
         _lLoading = false;
         UpdateLauncherPreview();
+        LOverlay.Visibility = Visibility.Visible;
         await ShowExeAsync(g, p);
+    }
+
+    private static void SetChip(Panel panel, string tag)
+    {
+        var chips = panel.Children.OfType<RadioButton>().ToList();
+        var hit = chips.FirstOrDefault(c => (string)c.Tag == tag) ?? chips.FirstOrDefault();
+        if (hit != null) hit.IsChecked = true;
     }
 
     private async Task ShowExeAsync(LibGame g, GameProfile p)
@@ -155,30 +326,33 @@ public partial class MainWindow
                 exe = await Task.Run(() => GameLauncher.FindMainExe(dir, name));
                 _exeGuess[g.Key] = exe;
             }
-            if (_lg != g) return; // o usuário já trocou de jogo
-            LExeText.Text = exe != null ? $"Executável (detectado, confirme): {exe}" : "Executável não identificado. Ele é descoberto ao jogar, ou escolha manualmente.";
+            if (_lg != g) return; // a janela já é de outro jogo
+            LExeText.Text = exe != null ? $"{exe} (detectado; confirme ou troque)" : "Não identificado. Ele é descoberto ao jogar, ou escolha em \"Trocar .exe\".";
         }
-        else LExeText.Text = "Executável: " + exe;
+        else LExeText.Text = exe;
     }
 
-    private void SaveProfileFromControls()
+    /// <summary>Lê os campos da janela para a cópia em edição (os argumentos e a prévia mudam na hora).</summary>
+    private void ReadDialogIntoProfile()
     {
-        if (_lLoading || _lp == null || LPreview == null) return;
-        _lp.Priority = CheckedTag(LPriorityPanel) ?? "normal";
-        _lp.HighPerfPlan = LChkPlan.IsChecked == true;
-        _lp.GpuHigh = LChkGpu.IsChecked == true;
-        _lp.DisableFso = LChkFso.IsChecked == true;
+        if (_lp == null) return;
+        _lp.FreeCore0 = _tCore0.IsChecked == true;
+        _lp.PhysicalOnly = _tPhys.IsChecked == true;
+        _lp.PCoresOnly = _tPCore.IsChecked == true;
+        if (_tPrio.IsChecked == true) _lp.Priority = "high";
+        else if (_lp.Priority == "high") _lp.Priority = "normal";
+        _lp.HighPerfPlan = _tPlan.IsChecked == true;
+        _lp.GpuHigh = _tGpu.IsChecked == true;
+        _lp.DisableFso = _tFso.IsChecked == true;
         _lp.WinMode = CheckedTag(LModePanel) ?? "default";
         _lp.Res = CheckedTag(LResPanel) ?? "default";
         _lp.Hz = int.TryParse(CheckedTag(LHzPanel), out int hz) ? hz : 0;
         _lp.Style = CheckedTag(LStylePanel) ?? "source";
         _lp.Extra = LExtra.Text.Trim();
-        try { _settings.Save(); } catch { }
-        UpdateLauncherPreview();
     }
 
-    private void LProfile_Changed(object sender, RoutedEventArgs e) => SaveProfileFromControls();
-    private void LExtra_Changed(object sender, TextChangedEventArgs e) => SaveProfileFromControls();
+    private void LProfile_Changed(object sender, RoutedEventArgs e) { if (!_lLoading) { ReadDialogIntoProfile(); UpdateLauncherPreview(); } }
+    private void LExtra_Changed(object sender, TextChangedEventArgs e) { if (!_lLoading) { ReadDialogIntoProfile(); UpdateLauncherPreview(); } }
 
     private void UpdateLauncherPreview()
     {
@@ -187,17 +361,35 @@ public partial class MainWindow
         LPreview.Text = a.Length > 0 ? a : "(nenhum argumento)";
     }
 
+    private void BtnDlgCancel_Click(object sender, RoutedEventArgs e)
+    {
+        LOverlay.Visibility = Visibility.Collapsed;
+        _lp = null; _lg = null;
+    }
+
+    /// <summary>Salva o perfil e grava já no Windows o que é "por .exe" (GPU dedicada e tela cheia).</summary>
+    private void BtnDlgSave_Click(object sender, RoutedEventArgs e)
+    {
+        if (_lg == null || _lp == null) return;
+        ReadDialogIntoProfile();
+        _settings.GameProfiles[_lg.Key] = _lp;
+        try { _settings.Save(); } catch { }
+        string? exe = _lp.ExePath ?? _lg.ExePath ?? (_exeGuess.TryGetValue(_lg.Key, out var guess) ? guess : null);
+        if (exe != null && File.Exists(exe))
+        {
+            try { GameLauncher.SetGpuPreference(exe, _lp.GpuHigh); } catch { }
+            try { GameLauncher.SetDisableFso(exe, _lp.DisableFso); } catch { }
+        }
+        LStatus.Text = $"Ajustes de {_lg.Name} salvos.";
+        LOverlay.Visibility = Visibility.Collapsed;
+        _lp = null; _lg = null;
+    }
+
     private void BtnRecommended_Click(object sender, RoutedEventArgs e)
     {
         if (_lp == null) return;
-        _lLoading = true;
-        SetChip(LPriorityPanel, "high");
-        LChkPlan.IsChecked = true;
-        LChkGpu.IsChecked = true;
-        LChkFso.IsChecked = true;
-        _lLoading = false;
-        SaveProfileFromControls();
-        LStatus.Text = "Perfil para mais FPS ligado: prioridade alta, Alto desempenho, GPU dedicada e sem otimizações de tela cheia.";
+        _tPrio.IsChecked = _tPlan.IsChecked = _tGpu.IsChecked = _tFso.IsChecked = true;
+        ReadDialogIntoProfile();
     }
 
     private async void BtnPickExe_Click(object sender, RoutedEventArgs e)
@@ -210,7 +402,6 @@ public partial class MainWindow
         };
         if (dlg.ShowDialog(this) != true) return;
         _lp.ExePath = dlg.FileName;
-        try { _settings.Save(); } catch { }
         await ShowExeAsync(_lg, _lp);
     }
 
@@ -222,7 +413,6 @@ public partial class MainWindow
         var dlg = new OpenFileDialog { Filter = "Programas e scripts|*.exe;*.bat;*.cmd;*.lnk", Title = "Programa para abrir junto com o jogo" };
         if (dlg.ShowDialog(this) != true) return;
         _lp.Helpers.Add(new HelperProgram { Path = dlg.FileName, CloseWithGame = LHelperClose.IsChecked == true });
-        try { _settings.Save(); } catch { }
         LHelpers.ItemsSource = null;
         LHelpers.ItemsSource = _lp.Helpers;
     }
@@ -231,7 +421,6 @@ public partial class MainWindow
     {
         if (_lp == null || ((FrameworkElement)sender).Tag is not HelperProgram h) return;
         _lp.Helpers.Remove(h);
-        try { _settings.Save(); } catch { }
         LHelpers.ItemsSource = null;
         LHelpers.ItemsSource = _lp.Helpers;
     }
@@ -242,6 +431,7 @@ public partial class MainWindow
     {
         var g = _lg;
         if (g == null || !g.IsSteam || _lp == null) return;
+        ReadDialogIntoProfile();
         string opts = GameLauncher.BuildArgs(_lp);
         BtnSteamApply.IsEnabled = false;
         try
@@ -251,49 +441,14 @@ public partial class MainWindow
                 var ask = MessageBox.Show(this,
                     "A Steam precisa ser fechada para gravar as opções de inicialização (senão ela as sobrescreve ao sair).\n\n" +
                     "Fechar a Steam agora? Jogos abertos serão encerrados. Feito um backup do arquivo antes de alterar.",
-                    "RESET JOGOS · Steam", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                    "Jogos · Steam", MessageBoxButton.YesNo, MessageBoxImage.Question);
                 if (ask != MessageBoxResult.Yes) return;
-                LStatus.Text = "Fechando a Steam…";
-                if (!await SteamInfo.ShutdownAsync()) { LStatus.Text = "A Steam não fechou. Feche-a manualmente e tente de novo."; return; }
+                LSteamNow.Text = "Fechando a Steam…";
+                if (!await SteamInfo.ShutdownAsync()) { LSteamNow.Text = "A Steam não fechou. Feche-a manualmente e tente de novo."; return; }
             }
             string? err = await Task.Run(() => SteamInfo.SetLaunchOptions(g.Id, opts));
-            LStatus.Text = err ?? (opts.Length > 0 ? $"Opções gravadas na Steam: {opts}. Clique em JOGAR (a Steam abre sozinha)." : "Opções da Steam limpas para este jogo.");
-            LSteamNow.Text = "Opções atuais na Steam: " + (SteamInfo.GetLaunchOptions(g.Id) is { Length: > 0 } cur ? cur : "(nenhuma)");
+            LSteamNow.Text = err ?? "Opções atuais na Steam: " + (SteamInfo.GetLaunchOptions(g.Id) is { Length: > 0 } cur ? cur : "(nenhuma)");
         }
         finally { BtnSteamApply.IsEnabled = true; }
-    }
-
-    // ---------------- Jogar ----------------
-
-    private async void BtnPlay_Click(object sender, RoutedEventArgs e)
-    {
-        if (_launchCts != null) { _launchCts.Cancel(); return; }
-        var g = _lg;
-        var p = _lp;
-        if (g == null || p == null) return;
-
-        _launchCts = new CancellationTokenSource();
-        BtnPlay.Content = "PARAR ACOMPANHAMENTO";
-        try
-        {
-            await GameLauncher.RunAsync(g, p,
-                t => Dispatcher.BeginInvoke(new Action(() => LStatus.Text = t)),
-                exe => Dispatcher.BeginInvoke(new Action(() =>
-                {
-                    if (!string.Equals(p.ExePath, exe, StringComparison.OrdinalIgnoreCase))
-                    {
-                        p.ExePath = exe;
-                        try { _settings.Save(); } catch { }
-                        if (_lg == g) LExeText.Text = "Executável: " + exe;
-                    }
-                })),
-                _launchCts.Token);
-        }
-        finally
-        {
-            _launchCts?.Dispose();
-            _launchCts = null;
-            BtnPlay.Content = "JOGAR";
-        }
     }
 }

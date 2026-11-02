@@ -18,6 +18,17 @@ public sealed class LibGame
     public string Key => Store + ":" + Id;
     public string Subtitle => Store;
     public bool IsSteam => Store == "Steam";
+
+    /// <summary>Capa vertical do jogo (a mesma da biblioteca da Steam), ou null se não houver uma no disco.</summary>
+    public string? CoverPath()
+    {
+        if (!IsSteam || SteamInfo.SteamPath() is not string steam) return null;
+        string cache = Path.Combine(steam, "appcache", "librarycache");
+        foreach (var f in new[] { Path.Combine(cache, Id, "library_600x900.jpg"), Path.Combine(cache, $"{Id}_library_600x900.jpg"),
+                                  Path.Combine(cache, Id, "header.jpg"), Path.Combine(cache, $"{Id}_header.jpg") })
+            if (File.Exists(f)) return f;
+        return null;
+    }
 }
 
 /// <summary>Procura jogos instalados: Steam, Epic Games, GOG, Ubisoft Connect e os adicionados manualmente. Só lê arquivos e registro.</summary>

@@ -33,6 +33,19 @@ public sealed class GameProfile
     public string Style { get; set; } = "source";      // source | unity | unreal
     public string Extra { get; set; } = "";
     public List<HelperProgram> Helpers { get; set; } = new();
+
+    // Núcleos da CPU para o processo do jogo (afinidade), aplicados quando o jogo abre por "Preparar e jogar"
+    public bool FreeCore0 { get; set; }      // deixa o núcleo 0 para o Windows e os drivers
+    public bool PhysicalOnly { get; set; }   // uma thread por núcleo físico (sem SMT/Hyper-Threading)
+    public bool PCoresOnly { get; set; }     // só núcleos de desempenho (sem E-cores) em CPUs híbridas
+
+    /// <summary>Cópia para a janela de ajustes: só vira o perfil do jogo ao clicar em "Salvar ajustes".</summary>
+    public GameProfile Clone()
+    {
+        var c = (GameProfile)MemberwiseClone();
+        c.Helpers = Helpers.Select(h => new HelperProgram { Path = h.Path, Args = h.Args, CloseWithGame = h.CloseWithGame }).ToList();
+        return c;
+    }
 }
 
 /// <summary>Jogo adicionado à mão (qualquer .exe).</summary>
