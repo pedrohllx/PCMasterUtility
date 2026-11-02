@@ -23,44 +23,68 @@ public sealed class SensorMonitor : IDisposable
             IsMotherboardEnabled = true,
             IsStorageEnabled = true,
             IsNetworkEnabled = true,
-            IsControllerEnabled = true
+            // Controladoras (hubs de fan/RGB via HID): enumerar a cada segundo custa CPU e disputa o dispositivo com
+            // o iCUE e similares; a integração de iluminação fala com eles direto.
+            IsControllerEnabled = false
         };
     }
 
     /// <summary>Detecta o hardware (leva de 0,5 a alguns segundos) fora da thread da janela. Até terminar, Refresh não faz nada.</summary>
     public Task OpenAsync() => Task.Run(() => { _computer.Open(); _open = true; });
 
-    public void Refresh()
+    private readonly record struct Reading(IHardware Hw, ISensor Sensor, float? Value, float? Min, float? Max);
+    private readonly Dictionary<ISensor, SensorRow> _bySensor = new();
+    private int _busy;
+
+    /// <summary>Lê o hardware fora da thread da janela (as leituras do LHM levam de alguns a dezenas de ms) e depois
+    /// aplica os valores na tela de uma vez. Se a leitura anterior ainda não terminou, esta é pulada.</summary>
+    public async Task RefreshAsync()
     {
-        if (!_open) return;
-        foreach (var hw in _computer.Hardware)
-            Walk(hw);
+        if (!_open || Interlocked.Exchange(ref _busy, 1) == 1) return;
+        try
+        {
+            var readings = await Task.Run(Collect);
+            foreach (var r in readings) Apply(r);
+        }
+        finally { Volatile.Write(ref _busy, 0); }
     }
 
-    private void Walk(IHardware hw)
+    private List<Reading> Collect()
+    {
+        var list = new List<Reading>(_bySensor.Count + 32);
+        foreach (var hw in _computer.Hardware) Walk(hw, list);
+        return list;
+    }
+
+    private static void Walk(IHardware hw, List<Reading> list)
     {
         hw.Update();
-        foreach (var s in hw.Sensors)
+        foreach (var s in hw.Sensors) list.Add(new Reading(hw, s, s.Value, s.Min, s.Max));
+        foreach (var sub in hw.SubHardware) Walk(sub, list);
+    }
+
+    private void Apply(Reading r)
+    {
+        if (!_bySensor.TryGetValue(r.Sensor, out var row))
         {
-            string id = s.Identifier.ToString();
-            if (!_index.TryGetValue(id, out var row))
+            string id = r.Sensor.Identifier.ToString();
+            if (!_index.TryGetValue(id, out row))
             {
                 row = new SensorRow
                 {
                     Id = id,
-                    Hardware = hw.Name,
-                    Category = SensorRow.CategoryName(s.SensorType),
-                    Name = s.Name,
-                    Type = s.SensorType,
-                    HardwareType = hw.HardwareType
+                    Hardware = r.Hw.Name,
+                    Category = SensorRow.CategoryName(r.Sensor.SensorType),
+                    Name = r.Sensor.Name,
+                    Type = r.Sensor.SensorType,
+                    HardwareType = r.Hw.HardwareType
                 };
                 _index[id] = row;
                 Rows.Add(row);
             }
-            row.Update(s.Value, s.Min, s.Max);
+            _bySensor[r.Sensor] = row;
         }
-        foreach (var sub in hw.SubHardware)
-            Walk(sub);
+        row.Update(r.Value, r.Min, r.Max);
     }
 
     /// <summary>Temperatura principal da CPU: Package (Intel) / Tctl-Tdie (AMD), senão a maior entre os núcleos.</summary>
@@ -101,9 +125,17 @@ public sealed class SensorMonitor : IDisposable
         }
     }
 
-    public static bool IsElevated =>
-        new System.Security.Principal.WindowsPrincipal(System.Security.Principal.WindowsIdentity.GetCurrent())
-            .IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
+    /// <summary>Só muda reabrindo o app, então é lido uma vez (antes criava um token do Windows por segundo).</summary>
+    public static bool IsElevated { get; } = ReadElevated();
+
+    private static bool ReadElevated()
+    {
+        using var id = System.Security.Principal.WindowsIdentity.GetCurrent();
+        return new System.Security.Principal.WindowsPrincipal(id).IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
+    }
+
+    private static bool? _pawnIo;
+    private static bool PawnIoCached => _pawnIo ??= IsPawnIOInstalled;
 
     public enum CpuSensorProblem { None, NotElevated, PawnIOMissing, ReadFailed }
 
@@ -112,7 +144,7 @@ public sealed class SensorMonitor : IDisposable
     {
         if (CpuTemperature != null) return CpuSensorProblem.None;
         if (!IsElevated) return CpuSensorProblem.NotElevated;
-        if (!IsPawnIOInstalled) return CpuSensorProblem.PawnIOMissing;
+        if (!PawnIoCached) return CpuSensorProblem.PawnIOMissing;
         return CpuSensorProblem.ReadFailed;
     }
 

@@ -98,6 +98,7 @@ public static class Optimizer
                 HasWindow = hasWindow, Suggested = suggested, Selected = suggested
             });
         }
+        foreach (var procs in groups.Values) foreach (var p in procs) p.Dispose(); // libera os handles dos processos
         return result.OrderByDescending(a => a.Suggested).ThenByDescending(a => a.MemoryBytes).ToList();
     }
 

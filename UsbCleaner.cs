@@ -121,7 +121,8 @@ public static class UsbCleaner
     public static (List<int> Reserved, List<int> InUse) ComStatus()
     {
         var reserved = new List<int>();
-        if (Registry.LocalMachine.OpenSubKey(ArbiterKey)?.GetValue("ComDB") is byte[] db)
+        using var arbiter = Registry.LocalMachine.OpenSubKey(ArbiterKey);
+        if (arbiter?.GetValue("ComDB") is byte[] db)
             for (int n = 1; n <= db.Length * 8; n++)
                 if ((db[(n - 1) / 8] & (1 << ((n - 1) % 8))) != 0) reserved.Add(n);
         return (reserved, PortsInUse());

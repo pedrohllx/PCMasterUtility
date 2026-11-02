@@ -141,6 +141,10 @@ public sealed class GpuOc
         catch (Exception) { return null; }
     }
 
+    /// <summary>Uma operação por vez na placa: APLICAR, RESET e a leitura da curva rodam fora da thread da janela,
+    /// e o monitoramento de 1 s pula a amostra enquanto uma delas está em andamento.</summary>
+    public object Gate { get; } = new();
+
     public OcSample Sample()
     {
         IntPtr h = NvmlGpu;

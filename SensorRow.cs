@@ -27,12 +27,14 @@ public class SensorRow : INotifyPropertyChanged
     public string Min => Format(_min);
     public string Max => Format(_max);
 
+    private static readonly PropertyChangedEventArgs ValueArgs = new(nameof(Value)), MinArgs = new(nameof(Min)), MaxArgs = new(nameof(Max));
+
+    /// <summary>Atualiza os valores e avisa a tela só do que mudou (centenas de sensores por segundo).</summary>
     public void Update(float? value, float? min, float? max)
     {
-        _value = value; _min = min; _max = max;
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Value)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Min)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Max)));
+        if (_value != value) { _value = value; PropertyChanged?.Invoke(this, ValueArgs); }
+        if (_min != min) { _min = min; PropertyChanged?.Invoke(this, MinArgs); }
+        if (_max != max) { _max = max; PropertyChanged?.Invoke(this, MaxArgs); }
     }
 
     private string Format(float? v)

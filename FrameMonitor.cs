@@ -106,17 +106,40 @@ public sealed class FrameMonitor : IDisposable
     /// <summary>Estatísticas do programa em primeiro plano (o jogo que está na tela).</summary>
     public FrameStats? GetForegroundStats()
     {
+        if (Stopwatch.GetElapsedTime(_lastPrune).TotalSeconds > 30) { _lastPrune = Stopwatch.GetTimestamp(); Prune(); }
         var hwnd = GetForegroundWindow();
         if (hwnd == IntPtr.Zero) return null;
         GetWindowThreadProcessId(hwnd, out uint pid);
         return pid == 0 || pid == Environment.ProcessId ? null : GetStats((int)pid);
     }
 
-    private static string ProcessName(int pid)
+    private readonly Dictionary<int, string> _names = new();
+
+    /// <summary>Nome do processo, guardado por PID (antes abria um Process novo, sem liberar, várias vezes por segundo).</summary>
+    private string ProcessName(int pid)
     {
-        try { return Process.GetProcessById(pid).ProcessName; }
-        catch { return $"PID {pid}"; }
+        lock (_names)
+        {
+            if (_names.TryGetValue(pid, out var name)) return name;
+            try { using var p = Process.GetProcessById(pid); name = p.ProcessName; }
+            catch { name = $"PID {pid}"; }
+            return _names[pid] = name;
+        }
     }
+
+    /// <summary>Esquece processos que não apresentam frames há mais de 30 s (navegador, Discord, jogos já fechados).</summary>
+    private void Prune()
+    {
+        lock (_lock)
+        {
+            foreach (int pid in _lastSeen.Where(kv => Stopwatch.GetElapsedTime(kv.Value).TotalSeconds > 30).Select(kv => kv.Key).ToList())
+            {
+                _lastSeen.Remove(pid); _presents.Remove(pid);
+                lock (_names) _names.Remove(pid);
+            }
+        }
+    }
+    private long _lastPrune = Stopwatch.GetTimestamp();
 
     public void Dispose()
     {

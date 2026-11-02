@@ -25,9 +25,10 @@ public partial class MainWindow
         }
     }
 
-    private void UpdateRecentErrors()
+    /// <summary>Lê o registro de eventos do Windows fora da thread da janela (consulta lenta).</summary>
+    private async void UpdateRecentErrors()
     {
-        HardwareErrors hardwareErrors = OcCheck.ErrorsSince(DateTime.Now.AddDays(-7.0));
+        HardwareErrors hardwareErrors = await Task.Run(() => OcCheck.ErrorsSince(DateTime.Now.AddDays(-7.0)));
         OcRecentErrors.Text = ((hardwareErrors.Error != null) ? ("Não foi possível ler o registro: " + hardwareErrors.Error) : ((hardwareErrors.Total == 0) ? "Nenhum erro de hardware nem reinício do driver de vídeo nos últimos 7 dias." : $"Últimos 7 dias: {hardwareErrors.Whea} erros WHEA · {hardwareErrors.GpuResets} reinícios do driver de vídeo.\nÚltimo: {hardwareErrors.LastDetail}"));
     }
 
@@ -318,9 +319,10 @@ public partial class MainWindow
         UpdateRecentErrors();
     }
 
-    private void BuildOcGuide()
+    /// <summary>Monta o guia da BIOS; a placa-mãe vem do WMI, consultado fora da thread da janela.</summary>
+    private async void BuildOcGuide()
     {
-        (string Maker, string Model) tuple = OcCheck.Motherboard();
+        (string Maker, string Model) tuple = await Task.Run(OcCheck.Motherboard);
         string item = tuple.Maker;
         string item2 = tuple.Model;
         bool flag = item.Contains("Gigabyte", StringComparison.OrdinalIgnoreCase);

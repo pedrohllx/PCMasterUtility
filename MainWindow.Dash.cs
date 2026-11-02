@@ -341,9 +341,35 @@ public partial class MainWindow
 
     // ---------------- saúde do PC ----------------
 
-    private void UpdateDashHealth()
+    private bool _healthBusy;
+    private (HardwareErrors Errors, int? StuckCom, DateTime At)? _healthSlow;
+
+    /// <summary>Checklist de saúde. O que é lento (registro de eventos do Windows e a varredura de portas COM, que
+    /// levam centenas de ms) roda fora da thread da janela e fica guardado por 60 s.</summary>
+    private async void UpdateDashHealth()
     {
+        if (_healthBusy) return;
+        _healthBusy = true;
         _healthAt = DateTime.Now;
+        try
+        {
+            if (_healthSlow is not { } slow || (DateTime.Now - slow.At).TotalSeconds > 60)
+            {
+                _healthSlow = slow = await Task.Run(() =>
+                {
+                    var errors = OcCheck.ErrorsSince(DateTime.Now.AddDays(-7));
+                    int? stuck = null;
+                    try { var (reserved, inUse) = UsbCleaner.ComStatus(); stuck = reserved.Except(inUse).Count(); } catch { }
+                    return (errors, stuck, DateTime.Now);
+                });
+            }
+            ShowDashHealth(slow.Errors, slow.StuckCom);
+        }
+        finally { _healthBusy = false; }
+    }
+
+    private void ShowDashHealth(HardwareErrors errs, int? stuckCom)
+    {
         DashCheck Item(bool ok, string title, string okText, string badText) => new(title, ok ? okText : badText, ok);
 
         var list = new List<DashCheck>();
@@ -354,7 +380,6 @@ public partial class MainWindow
                           "Temperatura e consumo disponíveis.", SensorMonitor.Explain(sensors).Split('.')[0] + "."));
         }
 
-        var errs = OcCheck.ErrorsSince(DateTime.Now.AddDays(-7));
         list.Add(Item(errs.Error == null && errs.Total == 0, "Sem erros de hardware",
                       "Nenhum WHEA ou reinício do driver de vídeo em 7 dias.",
                       errs.Error != null ? "Não foi possível ler o registro do Windows."
@@ -367,14 +392,9 @@ public partial class MainWindow
         if (dvr != null) list.Add(Item(dvr.IsOn, "Gravação em segundo plano desligada", "O Game Bar não grava o tempo todo.",
                                        "O Game DVR está gravando: custa FPS."));
 
-        try
-        {
-            var (reserved, inUse) = UsbCleaner.ComStatus();
-            int stuck = reserved.Except(inUse).Count();
+        if (stuckCom is int stuck)
             list.Add(Item(stuck == 0, "Portas COM livres", "Nenhum número COM preso.",
                           $"{stuck} números presos por dispositivos antigos."));
-        }
-        catch { }
 
         _health = list;
         DashHealth.ItemsSource = _health;

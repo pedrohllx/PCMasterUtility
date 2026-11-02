@@ -53,15 +53,13 @@ public partial class MainWindow
             OcFanCurveOn.IsEnabled = _oc.Fans > 0;
             OcFanHyst.Value = P.FanHysteresisC;
             OcGpuState.Text = OcStateText();
-            ReadVfCurve();
             if (_settings.OcApplyOnStart && _settings.OcApplied is { } applied && IsAdmin())
             {
                 _settings.OcCurrent = applied.Clone();
-                OcGpuResult.Text = "Ajustes reaplicados ao abrir: " + string.Join(" ", _oc.Apply(P));
-                ApplyFanMode();
-                SyncOffsetsFromGpu();
                 SyncOcSliders();
+                BtnOcApply_Click(this, new RoutedEventArgs()); // fora da thread da janela; relê a curva no fim
             }
+            else ReadVfCurve();
             _ocTimer.Tick += (_, _) => OcTick();
             _ocTimer.Start();
             Closed += (_, _) => { _ocTimer.Stop(); if (_ocFansTouched) _oc?.FansAuto(); };
@@ -244,21 +242,34 @@ public partial class MainWindow
 
     // ---------------- Aplicar, reset e perfis ----------------
 
-    private void BtnOcApply_Click(object sender, RoutedEventArgs e)
+    /// <summary>Roda uma operação na placa fora da thread da janela (a leitura da curva pode esperar até 3 s),
+    /// com os botões desligados enquanto isso.</summary>
+    private async Task<T> OcRun<T>(Func<GpuOc, T> work)
+    {
+        var oc = _oc!;
+        BtnOcApply.IsEnabled = BtnOcReset.IsEnabled = false;
+        try { return await Task.Run(() => { lock (oc.Gate) return work(oc); }); }
+        finally { BtnOcApply.IsEnabled = BtnOcReset.IsEnabled = true; }
+    }
+
+    private async void BtnOcApply_Click(object sender, RoutedEventArgs e)
     {
         if (_oc == null || !RequireAdmin()) return;
-        var report = _oc.Apply(P);
+        var profile = P.Clone();
+        OcGpuResult.Text = "Aplicando…";
+        var report = await OcRun(oc => oc.Apply(profile));
         report.Add(ApplyFanMode());
-        _settings.OcApplied = P.Clone();
+        _settings.OcApplied = profile;
         _settings.Save();
         OcGpuResult.Text = string.Join(" ", report) + " Rode o verificador de estabilidade para confirmar.";
         ReadVfCurve();
     }
 
-    private void BtnOcReset_Click(object sender, RoutedEventArgs e)
+    private async void BtnOcReset_Click(object sender, RoutedEventArgs e)
     {
         if (_oc == null || !RequireAdmin()) return;
-        var report = _oc.Reset();
+        OcGpuResult.Text = "Voltando ao padrão…";
+        var report = await OcRun(oc => oc.Reset());
         _ocFansTouched = false; _ocFanCurrent = -1;
         _settings.OcCurrent = new OcProfile { FanCurve = P.FanCurve, FanHysteresisC = P.FanHysteresisC };
         _settings.OcApplied = null;
@@ -335,9 +346,14 @@ public partial class MainWindow
 
     private void OcTick()
     {
-        if (_oc == null) return;
+        // Pausa durante os benchmarks de GPU (cada consulta ao driver aparece no 1% low) e, com a janela minimizada,
+        // só continua se a curva de fans precisar da temperatura.
+        if (_oc == null || _gpuBenchActive) return;
+        if (WindowState == WindowState.Minimized && !P.FanCurveOn) return;
         OcSample s;
+        if (!Monitor.TryEnter(_oc.Gate)) return; // APLICAR/RESET em andamento
         try { s = _oc.Sample(); } catch (Exception) { return; }
+        finally { Monitor.Exit(_oc.Gate); }
         _ocSamples.Add(s);
         if (_ocSamples.Count > 120) _ocSamples.RemoveAt(0);
 
@@ -417,15 +433,21 @@ public partial class MainWindow
 
     private void BtnOcReadCurve_Click(object sender, RoutedEventArgs e) => ReadVfCurve();
 
-    private void ReadVfCurve()
+    private bool _vfReading;
+
+    /// <summary>Lê a curva fora da thread da janela (pode esperar até 3 s a placa sair de uma troca de estado).</summary>
+    private async void ReadVfCurve()
     {
         // Uma leitura que falha não apaga a curva de fábrica já conhecida (ela não muda com o overclock).
-        if (_oc?.CurveSupported == true)
+        if (_oc?.CurveSupported == true && !_vfReading)
         {
-            if (_oc.StockCurve == null && _settings.OcStockCurve is { Count: > 0 } saved)
-                _oc.StockCurve = saved.Select(p => (p[0], p[1])).ToList();
-            try { _vfStock = _oc.ReadCurve()?.Stock ?? _vfStock; }
+            var oc = _oc;
+            if (oc.StockCurve == null && _settings.OcStockCurve is { Count: > 0 } saved)
+                oc.StockCurve = saved.Select(p => (p[0], p[1])).ToList();
+            _vfReading = true;
+            try { _vfStock = await Task.Run(() => { lock (oc.Gate) return oc.ReadCurve()?.Stock; }) ?? _vfStock; }
             catch (Exception ex) { OcVfInfo.Text = "Não foi possível ler a curva: " + ex.Message; }
+            finally { _vfReading = false; }
             if (_oc.StockCurve is { } stock && _settings.OcStockCurve?.Count != stock.Count)
             {
                 _settings.OcStockCurve = stock.Select(p => new[] { p.Mv, p.Mhz }).ToList();

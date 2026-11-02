@@ -105,12 +105,14 @@ public partial class MainWindow : Window
         Loaded += async (_, _) => await LoadHardwareAsync();
 
         _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
-        _timer.Tick += (_, _) =>
+        _timer.Tick += async (_, _) =>
         {
             // Durante a cena de GPU as leituras de sensores (NVML/driver) ficam pausadas: cada consulta trava o driver
             // por um instante e aparecia como engasgo no 1% low do benchmark.
             if (_gpuBenchActive) return;
-            _monitor.Refresh();
+            await _monitor.RefreshAsync();
+            // Minimizado e sem teste/análise rodando: só a leitura dos sensores (para o histórico); nada de desenhar.
+            if (WindowState == WindowState.Minimized && !TestRunning && _bnSession == null) return;
             if (_monitor.IsOpen) StatusText.Text = $"{_monitor.Rows.Count} sensores · atualizado {DateTime.Now:HH:mm:ss}";
             UpdateStressPanel();
             UpdateGpuLive();
@@ -127,6 +129,8 @@ public partial class MainWindow : Window
             // Sem borda nativa, a janela maximizada vaza ~7 px para fora da tela.
             bool max = WindowState == WindowState.Maximized;
             Root.Margin = max ? new Thickness(7) : new Thickness(0);
+            // Minimizado, os sensores são lidos a cada 3 s em vez de 1 s (menos CPU enquanto se joga).
+            _timer.Interval = TimeSpan.FromSeconds(WindowState == WindowState.Minimized ? 3 : 1);
             BtnMax.Content = max ? "" : "";
         };
         Closed += (_, _) =>
@@ -162,7 +166,7 @@ public partial class MainWindow : Window
         {
             try { await _monitor.OpenAsync(); }
             catch (Exception ex) { StatusText.Text = $"Sensores indisponíveis: {ex.Message}"; return; }
-            _monitor.Refresh();
+            await _monitor.RefreshAsync();
             UpdateCpuSensorWarning();
             AddChip("Todos", null, isChecked: true);
             foreach (var c in _monitor.Rows.Select(r => r.Category).Distinct().OrderBy(x => x))
@@ -572,7 +576,6 @@ public partial class MainWindow : Window
 
     private void InitBottleneckAndOverlay()
     {
-        _frames.Start();
 
         var (ratio, text) = BottleneckAnalyzer.Balance(_gpuIdx, _cpuIdx);
         _balanceRatio = ratio;
@@ -603,6 +606,9 @@ public partial class MainWindow : Window
 
     private void UpdateBottleneck()
     {
+        // Sem a aba aberta e sem análise rodando não há quem use a amostra (antes consultava o driver todo segundo).
+        if (!PageBottleneck.IsVisible && _bnSession == null) return;
+        _frames.Start(); // a escuta de FPS (ETW) só liga quando alguém precisa dela
         var frames = _frames.GetForegroundStats();
         var s = BottleneckAnalyzer.Sample(_monitor, _gpus.FirstOrDefault(), frames);
         var lim = s.Classify();
@@ -852,9 +858,10 @@ public partial class MainWindow : Window
         OptRamBar.ScaleX = used / total;
     }
 
-    private void RefreshApps()
+    /// <summary>Lista os programas abertos fora da thread da janela (percorre todos os processos do Windows).</summary>
+    private async void RefreshApps()
     {
-        _apps = Optimizer.ListApps();
+        _apps = await Task.Run(Optimizer.ListApps);
         OptApps.ItemsSource = _apps;
     }
 
@@ -1340,6 +1347,7 @@ public partial class MainWindow : Window
 
     private void UpdateOverlay()
     {
+        _frames.Start(); // liga a escuta de FPS na primeira vez que o overlay precisa dela
         var f = _frames.GetForegroundStats();
         if (_overlay != null && _overlay.IsVisible)
         {
@@ -1599,8 +1607,12 @@ public partial class MainWindow : Window
         StGpuTemp.Text = gTemp == null ? "—" : $"{gTemp:0.#} °C";
         StGpuTempMax.Text = _gpuMaxTemp > 0 ? $"máx. {_gpuMaxTemp:0.#} °C" : "máx. —";
         StGpuPower.Text = gPower == null ? "—" : $"{gPower:0.#} W";
-        string cap = MainGpuPerfCap();
-        StGpuCap.Text = cap.Length > 0 ? $"limitador: {cap}" : "—";
+        // O limitador custa ~11 consultas ao driver: só quando a aba de stress está na tela.
+        if (PageStress.IsVisible)
+        {
+            string cap = MainGpuPerfCap();
+            StGpuCap.Text = cap.Length > 0 ? $"limitador: {cap}" : "—";
+        }
         StFps.Text = _gpuBurnOn && _burn.Fps > 0 ? $"{_burn.Fps:0}" : "—";
         StFpsAvg.Text = _gpuBurnOn && _burn.AverageFps > 0 ? $"média {_burn.AverageFps:0}" : "média —";
 
