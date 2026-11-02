@@ -318,6 +318,15 @@
                                 </StackPanel>
                             </RadioButton>
                             </StackPanel>
+                            <ToggleButton x:Name="GrpOtim" Style="{StaticResource NavGroup}" Content="OTIMIZAÇÃO"/>
+                            <StackPanel x:Name="GrpOtimItems" Margin="10,0,0,4" Visibility="{Binding IsChecked, ElementName=GrpOtim, Converter={StaticResource BoolVis}}">
+                            <RadioButton x:Name="NavWinStartup" Style="{StaticResource NavItem}" Tag="PageUltimate" Checked="Nav_Checked">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE7E8;" FontFamily="{StaticResource Icons}" FontSize="14" Width="28" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Inicialização do Windows" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </RadioButton>
+                            </StackPanel>
                         </StackPanel>
                     </ScrollViewer>
                 </DockPanel>
@@ -2309,6 +2318,35 @@
                                 </ItemsControl>
                                 <Button x:Name="BtnAppsStore" Style="{StaticResource OutlineButton}" Content="ATUALIZAR O INSTALADOR DE APLICATIVO (MICROSOFT STORE)"
                                         Padding="14,7" Margin="0,12,0,0" HorizontalAlignment="Left" Visibility="Collapsed" Click="BtnAppsStore_Click"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ===== OTIMIZAÇÃO · Inicialização do Windows (Windows Update) ===== -->
+                <ScrollViewer x:Name="PageUltimate" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="36,30,36,30">
+                        <StackPanel Margin="0,0,0,20">
+                            <TextBlock Text="INICIALIZAÇÃO DO WINDOWS" Style="{StaticResource H1}"/>
+                            <TextBlock Text="Ajustes do Windows com backup · nada é aplicado ao abrir esta página" Style="{StaticResource Sub}" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <Border Style="{StaticResource CardBorder}">
+                            <StackPanel>
+                                <TextBlock Text="WINDOWS UPDATE" Style="{StaticResource Label}" Margin="0,0,0,6"/>
+                                <TextBlock Foreground="{DynamicResource Faint}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12">
+                                    Pausa o Windows Update por 365 dias gravando seis datas de pausa. Inclui atualizações de recursos e de
+                                    segurança. A versão do Windows pode limitar ou ignorar esse prazo. Os valores anteriores ficam salvos
+                                    e podem ser restaurados.
+                                </TextBlock>
+                                <TextBlock x:Name="WuStatus" Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,0,0,6"/>
+                                <WrapPanel Margin="0,12,0,0">
+                                    <Button Style="{StaticResource PrimaryButton}" Content="PAUSAR POR 365 DIAS"
+                                            Padding="18,9" Margin="0,0,10,8" Click="BtnWuPause_Click"/>
+                                    <Button Style="{StaticResource OutlineButton}" Content="RESTAURAR CONFIGURAÇÃO ANTERIOR"
+                                            Padding="18,9" Margin="0,0,10,8" Click="BtnWuRestore_Click"/>
+                                    <Button Style="{StaticResource OutlineButton}" Content="ABRIR WINDOWS UPDATE"
+                                            Padding="18,9" Margin="0,0,10,8" Click="BtnWuOpen_Click"/>
+                                </WrapPanel>
                             </StackPanel>
                         </Border>
                     </StackPanel>

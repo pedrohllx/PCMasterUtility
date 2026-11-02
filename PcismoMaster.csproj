@@ -10,7 +10,7 @@
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <AssemblyName>PcismoMaster</AssemblyName>
     <Product>PcismoMaster</Product>
-    <Version>0.2.1</Version>
+    <Version>0.2.2</Version>
     <!-- Sempre otimizado: o RESET BENCH e os stress tests precisam do JIT otimizado também em Debug -->
     <Optimize>true</Optimize>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -45,4 +45,4 @@
     <PackageReference Include="Vortice.Dxc" Version="3.8.3" />
   </ItemGroup>
 
-<ItemGroup><Compile Remove="tests\**\*.cs" /><None Update="README.md;licenses\**\*;docs\**\*;LICENSE" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" /></ItemGroup><ItemGroup><None Update="Scripts\*.ps1" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" /></ItemGroup></Project>
+<ItemGroup><Compile Remove="tests\**\*.cs" /><None Update="README.md;licenses\**\*;docs\**\*;LICENSE" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" /></ItemGroup></Project>

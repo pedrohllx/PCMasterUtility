@@ -281,6 +281,7 @@ public partial class MainWindow : Window
             case "PageMakerPorts": ScanUsb(); break;
             case "PageMakerDrv": InitMakerDrivers(); break;
             case "PageOptimize": InitOptimize(); break;
+            case "PageUltimate": RefreshWindowsUpdate(); break;
         }
     }
 
