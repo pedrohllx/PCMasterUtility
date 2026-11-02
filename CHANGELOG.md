@@ -4,6 +4,12 @@ A numeração segue **SemVer** (`MAJOR.MINOR.PATCH`). Regras e processo em [docs
 
 ## Em desenvolvimento
 
+- **Drivers · Instalar driver e configurações recomendadas** (o "5 Graphics/3 Driver Updated Install & Settings" do Ultimate):
+  - **Instalar driver NVIDIA (silencioso e limpo)**: download oficial com assinatura conferida, instalação sem telas (`-s -noreboot -noeula -clean`), sem 7-Zip; se faltar o Painel de Controle NVIDIA, abre a página dele na Microsoft Store.
+  - **Configurações recomendadas** em interruptores com selo SEGURO/AVANÇADO, só dos fabricantes presentes no PC, **cada uma com backup e desfazer** (o script não guardava nada): NVIDIA (PhysX na GPU, menu de desenvolvedor, contadores de desempenho, sem ícone na bandeja, nitidez clássica), AMD (Anti-Lag, VSync off, texturas em desempenho, tesselação, Vari-Bright, Adrenalin sem notificações), Intel (VSync off, baixa latência, VRR global off) e Windows (gerenciamento automático de cor off, modo MSI, todos os ícones da bandeja).
+  - **Perfil global recomendado** do script aplicado pelo nosso Profile Inspector, guardando o valor anterior de cada configuração; **G-SYNC desligado** virou opção separada.
+  - Desligados por padrão (AVANÇADO): P-state dinâmico off (mais consumo em repouso), **HDCP off** (quebra Netflix/Disney+/Blu-ray, pede confirmação) e G-SYNC off. Fora do app: aceitar o EULA da AMD por você e o "Preferred OpenGL GPU" fixo de uma RTX 4090.
+  - Sem reinício automático: botão **Reiniciar agora** quando precisa.
 - **Drivers · Instalar driver atualizado** (o "5 Graphics/2 Driver Updated Install" do Ultimate, aproveitando o que a aba já fazia):
   - A placa de vídeo é reconhecida **mesmo sem driver** (pelo código PCI do fabricante), como logo depois da limpeza com o DDU; antes ela sumia da lista e não dava para instalar.
   - Novos botões **Instalar o driver mais recente de: NVIDIA · AMD · Intel** para escolher o fabricante à mão.

@@ -98,6 +98,12 @@ Test("Profiles clone deeply", () => {
     b.PointOffsetsMhz[1] = 99; b.FanCurve[0] = new(10, 10);
     Assert(a.PointOffsetsMhz[1] == 10); Assert(a.FanCurve[0] != b.FanCurve[0]);
 });
+Test("Binary (hex) settings apply and restore like DWORDs", () => {
+    var bin = new Module("bin-test", "t", "c", "d", "s", new[] { new Setting("HKLM", @"Software\Fake\UMD", "VSyncControl", 0, Hex: "3000") });
+    var engine = Engine("binary"); var before = bin.Settings.Select(fake.Read).ToArray();
+    engine.Enable(bin); Assert(engine.Matches(bin)); Assert(fake.Read(bin.Settings[0]).Kind == 3);
+    engine.Restore(bin); Assert(bin.Settings.Select(fake.Read).SequenceEqual(before));
+});
 Test("Real registry roundtrip only inside isolated test key", () => {
     var path = @"Software\PcismoMaster.Tests\" + Guid.NewGuid();
     var setting = new Setting("HKCU", path, "Sample", 0); var store = new RegistryStore();

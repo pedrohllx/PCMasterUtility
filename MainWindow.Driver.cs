@@ -15,6 +15,7 @@ public partial class MainWindow
     private void InitDriver()
     {
         InitDdu();
+        InitGfxTweaks();
         if (_drvInit) return;
         _drvInit = true;
         BtnDrvScan_Click(this, new RoutedEventArgs());

@@ -872,6 +872,37 @@
                             </StackPanel>
                         </Border>
 
+                        <!-- Instalar driver + configurações recomendadas (Ultimate · 5 Graphics · 3 Driver Updated Install & Settings) -->
+                        <Border Style="{StaticResource CardBorder}" Margin="0,0,0,14">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <Border Width="34" Height="34" CornerRadius="9" Background="{DynamicResource AccentGradient}" Margin="0,0,12,0">
+                                        <TextBlock Text="&#xE9F5;" FontFamily="{StaticResource Icons}" FontSize="16" Foreground="{DynamicResource OnAccent}"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="Instalar driver e configurações recomendadas" FontSize="15" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Driver novo instalado do zero e os ajustes de desempenho do driver e do Windows, cada um com desfazer" Foreground="{DynamicResource Muted}" FontSize="12"/>
+                                    </StackPanel>
+                                </StackPanel>
+                                <WrapPanel x:Name="GfxNvInstallRow" Margin="0,0,0,8">
+                                    <Button x:Name="BtnGfxNvInstall" Style="{StaticResource PrimaryButton}" Content="Instalar driver NVIDIA (silencioso e limpo)" Padding="16,8" Margin="0,0,10,6" Click="BtnGfxNvInstall_Click"
+                                            ToolTip="Baixa o driver oficial, confere a assinatura e instala sem telas, apagando as configurações antigas do driver (como o script)"/>
+                                    <TextBlock Foreground="{DynamicResource Faint}" FontSize="11.5" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="520">
+                                        AMD e Intel: use os botões de instalação no cartão PLACA DE VÍDEO e depois aplique as configurações abaixo.
+                                    </TextBlock>
+                                </WrapPanel>
+                                <StackPanel x:Name="GfxRows" Margin="0,4,0,0"/>
+                                <WrapPanel Margin="0,8,0,0">
+                                    <Button x:Name="BtnGfxApply" Style="{StaticResource PrimaryButton}" Content="Aplicar" Padding="18,8" Margin="0,0,10,8" Click="BtnGfxApply_Click"/>
+                                    <Button Style="{StaticResource OutlineButton}" Content="Marcar os recomendados" Padding="14,8" Margin="0,0,10,8" Click="BtnGfxDefaults_Click"/>
+                                    <Button Style="{StaticResource OutlineButton}" Content="Desfazer tudo" Padding="14,8" Margin="0,0,10,8" Click="BtnGfxUndoAll_Click"/>
+                                    <Button x:Name="BtnGfxReboot" Style="{StaticResource OutlineButton}" Content="Reiniciar agora" Padding="14,8" Margin="0,0,10,8" Visibility="Collapsed" Click="BtnGfxReboot_Click"/>
+                                </WrapPanel>
+                                <TextBlock x:Name="GfxStatus" Foreground="{DynamicResource Accent}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
                         <Border Style="{StaticResource CardBorder}" Margin="0,0,0,14">
                             <StackPanel>
                                 <TextBlock Text="PLACA DE VÍDEO" Style="{StaticResource Label}"/>
