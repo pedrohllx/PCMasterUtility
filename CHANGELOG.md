@@ -4,6 +4,10 @@ A numeração segue **SemVer** (`MAJOR.MINOR.PATCH`). Regras e processo em [docs
 
 ## Em desenvolvimento
 
+- **Drivers · NVIDIA Settings** (o "5 Graphics/5 Nvidia Settings" do Ultimate; as configurações dele já estavam no cartão de configurações recomendadas, com desfazer):
+  - Botões **Abrir Painel de Controle NVIDIA** (sem ele instalado, abre a página na Microsoft Store em vez de instalar um .appx de espelho) e **Atalho na Área de Trabalho**.
+  - **Perfil global NVIDIA no padrão do driver** (a opção "Default" do script), com aviso de que tira tudo o que foi mudado no perfil global e não tem desfazer.
+  - O Profile Inspector separado do script não é baixado: o app já tem o seu.
 - **Drivers · Instalação enxuta do driver (debloat)** (o "5 Graphics/4 Driver Debloat Install & Settings" do Ultimate; os ajustes do script já estão no cartão de configurações recomendadas):
   - NVIDIA: abre o pacote com o 7-Zip, tira os componentes marcados (telemetria, NVIDIA App, ShadowPlay, containers, nView, FrameView…) e instala em silêncio e limpo. Baixa o mais recente (assinatura conferida) ou usa um instalador seu.
   - AMD e Intel: instalador escolhido por você (assinatura da AMD/Intel conferida, fabricante detectado pelo pacote), extras desligados no pacote e limpezas depois de instalar.

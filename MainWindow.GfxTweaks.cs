@@ -25,6 +25,7 @@ public partial class MainWindow
         bool nvidia = vendors.Contains("nvidia");
         GfxNvInstallRow.Visibility = nvidia ? Visibility.Visible : Visibility.Collapsed;
         if (DebloatRows.Children.Count == 0) InitDebloat(vendors);
+        BtnGfxNvDefault.Visibility = GfxNvInstallRow.Visibility;
         var applied = await Task.Run(() => GraphicsTweaks.All.ToDictionary(t => t.Id, GraphicsTweaks.IsApplied));
         bool firstTime = !applied.Values.Any(x => x) && !GraphicsTweaks.DrsApplied(DrsNip) && !GraphicsTweaks.DrsApplied(DrsGsync);
 
@@ -139,6 +140,39 @@ public partial class MainWindow
     {
         foreach (var sw in _gfxToggles.Values) sw.IsChecked = false;
         BtnGfxApply_Click(sender, e);
+    }
+
+    private void BtnGfxNvPanel_Click(object sender, RoutedEventArgs e)
+    {
+        try { if (!GraphicsTweaks.OpenNvidiaControlPanel()) GfxStatus.Text = "O Painel de Controle NVIDIA não está instalado: a página dele na Microsoft Store foi aberta, clique em Obter."; }
+        catch (Exception ex) { GfxStatus.Text = "Não foi possível abrir o Painel de Controle NVIDIA: " + ex.Message; }
+    }
+
+    private void BtnGfxNvShortcut_Click(object sender, RoutedEventArgs e)
+    {
+        try { GraphicsTweaks.CreateNvidiaControlPanelShortcut(); GfxStatus.Text = "Atalho \"NVIDIA Control Panel\" criado na Área de Trabalho."; }
+        catch (Exception ex) { GfxStatus.Text = "Não foi possível criar o atalho: " + ex.Message; }
+    }
+
+    /// <summary>"NVIDIA Settings: Default" do script: perfil global de volta ao padrão do driver.</summary>
+    private async void BtnGfxNvDefault_Click(object sender, RoutedEventArgs e)
+    {
+        if (_gfxBusy || !RequireAdmin()) return;
+        if (MessageBox.Show(this,
+                "Voltar o perfil global da NVIDIA ao padrão do driver?\n\n" +
+                "Sai tudo o que foi mudado nele: o perfil recomendado, o G-SYNC desligado e também o que você ou outros programas mudaram " +
+                "(Painel de Controle, Profile Inspector). Os perfis de jogos não são tocados. Isso não tem desfazer.",
+                "Perfil global NVIDIA", MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK) return;
+        _gfxBusy = true;
+        try
+        {
+            await Task.Run(() => GraphicsTweaks.ResetGlobalDrs(DrsNip, DrsGsync));
+            RebuildGfx();
+            await Task.Delay(300);
+            GfxStatus.Text = "Perfil global no padrão do driver.";
+        }
+        catch (Exception ex) { GfxStatus.Text = "Não foi possível restaurar o perfil global: " + ex.Message; }
+        finally { _gfxBusy = false; }
     }
 
     private void BtnGfxReboot_Click(object sender, RoutedEventArgs e)

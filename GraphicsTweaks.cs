@@ -243,4 +243,43 @@ public static class GraphicsTweaks
     }
 
     public const string NvidiaControlPanelStore = "ms-windows-store://pdp/?ProductId=9NF8H0H7WMLT";
+    private const string NvidiaControlPanelApp = @"shell:appsFolder\NVIDIACorp.NVIDIAControlPanel_56jybvy8sckqj!NVIDIACorp.NVIDIAControlPanel";
+
+    /// <summary>Abre o Painel de Controle NVIDIA; se não estiver instalado, a página dele na Microsoft Store. Devolve se abriu o painel.</summary>
+    public static bool OpenNvidiaControlPanel()
+    {
+        bool has = HasNvidiaControlPanel();
+        Process.Start(new ProcessStartInfo(has ? "explorer.exe" : NvidiaControlPanelStore) { Arguments = has ? NvidiaControlPanelApp : "", UseShellExecute = true });
+        return has;
+    }
+
+    /// <summary>Atalho "NVIDIA Control Panel" na Área de Trabalho (como o script "5 Nvidia Settings").</summary>
+    public static void CreateNvidiaControlPanelShortcut()
+    {
+        var type = Type.GetTypeFromProgID("WScript.Shell") ?? throw new InvalidOperationException("WScript.Shell indisponível.");
+        dynamic shell = Activator.CreateInstance(type)!;
+        dynamic lnk = shell.CreateShortcut(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), "NVIDIA Control Panel.lnk"));
+        lnk.TargetPath = NvidiaControlPanelApp;
+        lnk.Save();
+    }
+
+    /// <summary>
+    /// "NVIDIA Settings: Default" do script: o perfil global volta ao padrão do driver (tudo o que foi mudado nele sai, não só o nosso).
+    /// Os backups do perfil recomendado e do G-SYNC deixam de valer e são apagados.
+    /// </summary>
+    public static void ResetGlobalDrs(params string[] backupIds)
+    {
+        NvDrs.Session(s =>
+        {
+            IntPtr p = NvDrs.BaseProfile(s);
+            try { NvDrs.RestoreProfile(s, p); }
+            catch (DrsException)
+            {
+                foreach (var v in NvDrs.ProfileSettings(s, p).Where(v => v.Location == DrsLocation.Current && !v.IsPredefined))
+                    NvDrs.Delete(s, p, v.Id);
+            }
+            return 0;
+        }, save: true);
+        foreach (var id in backupIds) if (DrsApplied(id)) File.Delete(DrsBackupFile(id));
+    }
 }

@@ -888,6 +888,10 @@
                                 <WrapPanel x:Name="GfxNvInstallRow" Margin="0,0,0,8">
                                     <Button x:Name="BtnGfxNvInstall" Style="{StaticResource PrimaryButton}" Content="Instalar driver NVIDIA (silencioso e limpo)" Padding="16,8" Margin="0,0,10,6" Click="BtnGfxNvInstall_Click"
                                             ToolTip="Baixa o driver oficial, confere a assinatura e instala sem telas, apagando as configurações antigas do driver (como o script)"/>
+                                    <Button Style="{StaticResource OutlineButton}" Content="Abrir Painel de Controle NVIDIA" Padding="14,8" Margin="0,0,10,6" Click="BtnGfxNvPanel_Click"
+                                            ToolTip="Se ainda não estiver instalado, abre a página dele na Microsoft Store"/>
+                                    <Button Style="{StaticResource OutlineButton}" Content="Atalho na Área de Trabalho" Padding="14,8" Margin="0,0,10,6" Click="BtnGfxNvShortcut_Click"
+                                            ToolTip="Cria o atalho &quot;NVIDIA Control Panel&quot; na Área de Trabalho"/>
                                     <TextBlock Foreground="{DynamicResource Faint}" FontSize="11.5" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="520">
                                         AMD e Intel: use os botões de instalação no cartão PLACA DE VÍDEO e depois aplique as configurações abaixo.
                                     </TextBlock>
@@ -897,6 +901,8 @@
                                     <Button x:Name="BtnGfxApply" Style="{StaticResource PrimaryButton}" Content="Aplicar" Padding="18,8" Margin="0,0,10,8" Click="BtnGfxApply_Click"/>
                                     <Button Style="{StaticResource OutlineButton}" Content="Marcar os recomendados" Padding="14,8" Margin="0,0,10,8" Click="BtnGfxDefaults_Click"/>
                                     <Button Style="{StaticResource OutlineButton}" Content="Desfazer tudo" Padding="14,8" Margin="0,0,10,8" Click="BtnGfxUndoAll_Click"/>
+                                    <Button x:Name="BtnGfxNvDefault" Style="{StaticResource OutlineButton}" Content="Perfil global NVIDIA no padrão do driver" Padding="14,8" Margin="0,0,10,8" Click="BtnGfxNvDefault_Click"
+                                            ToolTip="O &quot;NVIDIA Settings: Default&quot; do script: tira do perfil global tudo o que foi mudado (por qualquer programa)"/>
                                     <Button x:Name="BtnGfxReboot" Style="{StaticResource OutlineButton}" Content="Reiniciar agora" Padding="14,8" Margin="0,0,10,8" Visibility="Collapsed" Click="BtnGfxReboot_Click"/>
                                 </WrapPanel>
                                 <TextBlock x:Name="GfxStatus" Foreground="{DynamicResource Accent}" TextWrapping="Wrap"/>
