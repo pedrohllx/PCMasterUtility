@@ -2633,13 +2633,18 @@
                             <StackPanel>
                                 <Grid Margin="0,0,0,6">
                                     <TextBlock Text="CURVA TENSÃO × FREQUÊNCIA (V/F) · UNDERVOLT" Style="{StaticResource Label}"/>
-                                    <Button Style="{StaticResource OutlineButton}" Content="RELER CURVA" Padding="10,4" FontSize="11"
-                                            HorizontalAlignment="Right" VerticalAlignment="Top" Click="BtnOcReadCurve_Click"/>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
+                                        <Button Style="{StaticResource OutlineButton}" Content="LER DA PLACA" Padding="10,4" FontSize="11" Margin="0,0,8,0"
+                                                ToolTip="Traz para cá o ajuste aplicado agora na placa (inclusive pelo MSI Afterburner)" Click="BtnOcImport_Click"/>
+                                        <Button Style="{StaticResource OutlineButton}" Content="RELER CURVA" Padding="10,4" FontSize="11" Click="BtnOcReadCurve_Click"/>
+                                    </StackPanel>
                                 </Grid>
                                 <TextBlock Foreground="{DynamicResource Faint}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,10">
-                                    Arraste um ponto para cima ou para baixo para mudar o clock naquela tensão. Shift + arrastar move a curva
-                                    inteira (o mesmo que o slider Core Clock). Clique com o botão direito num ponto para fazer o undervolt:
-                                    a curva fica plana a partir daquela tensão, e a placa não passa dela. Cinza = fábrica, azul = como vai ficar.
+                                    Overclock + undervolt como no Afterburner: Shift + arrastar (ou o slider Core Clock) sobe a curva inteira;
+                                    depois clique no ponto da tensão desejada e aperte L (ou clique com o botão direito) para travar ali —
+                                    a curva fica plana a partir dele e a placa não passa dessa tensão. Arraste o ponto travado (ou use ↑/↓,
+                                    Ctrl = passos de 25 MHz) para escolher o clock do teto; ←/→ trocam de ponto; L de novo destrava.
+                                    Arrastar outro ponto muda só ele. Cinza = fábrica, azul = como vai ficar.
                                 </TextBlock>
                                 <Border Height="320" Background="{DynamicResource Bg}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="10">
                                     <Canvas x:Name="OcVfCanvas" ClipToBounds="True" Background="Transparent" Margin="6"/>

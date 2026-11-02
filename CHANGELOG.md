@@ -6,7 +6,8 @@ A numeração segue **SemVer** (`MAJOR.MINOR.PATCH`). Regras e processo em [docs
 
 - **Aba Overclock refeita no estilo do MSI Afterburner** (placas NVIDIA):
   - **Sliders** de Core Voltage (%), Power Limit (%), Temp. Limit (°C), Core Clock (MHz), Memory Clock (MHz) e Fan Speed (%) com AUTO. Cada slider tem caixa para digitar o valor; botão direito no slider zera o offset. Botões **RESET** (padrão de fábrica) e **APLICAR**.
-  - **Curva V/F (Ctrl+F do Afterburner)**: gráfico de tensão × frequência com a curva de fábrica (cinza) e a editada (azul). Arraste um ponto para mudar o clock naquela tensão; Shift + arrastar move a curva inteira. **Undervolt**: botão direito num ponto deixa a curva plana a partir daquela tensão, com clock automático ou digitado. Mostra o ponto em uso agora.
+  - **Curva V/F (Ctrl+F do Afterburner)**: gráfico de tensão × frequência com a curva de fábrica (cinza) e a editada (azul). Overclock + undervolt juntos como no Afterburner: Shift + arrastar (ou o slider Core Clock) sobe a curva; clique num ponto e aperte **L** (ou botão direito) para travar o teto ali; arraste o ponto travado ou use ↑/↓ para escolher o clock do teto. Destaque do teto com "mV · MHz", ponto em uso agora e botão **LER DA PLACA**, que traz o ajuste aplicado (inclusive pelo MSI Afterburner).
+  - Depois de aplicar, o app confirma no driver os pontos gravados e mantém a curva de fábrica na tela.
   - **Curva de fans** controlada pelo app: pontos arrastáveis, duplo clique cria ponto, botão direito apaga, histerese ajustável, temperatura e fan atuais no gráfico. Ao fechar o app, os fans voltam para o automático.
   - **Monitoramento** dos últimos 2 minutos: GPU clock, memory clock, temperatura, consumo × limite (curva de potência), fan e voltagem, mais o que está limitando o clock (energia, temperatura etc.).
   - **5 perfis** (SALVAR e escolher 1–5; clicar num perfil carrega e aplica) e opção de reaplicar os últimos ajustes ao abrir o PcismoMaster.

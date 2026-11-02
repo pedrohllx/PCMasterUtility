@@ -80,29 +80,52 @@ public sealed class GpuOc
         for (int waited = 0; ; waited += 50)
         {
             var live = NvApi.GetVfCurve(NvApiGpu);
-            var stock = VfCurveMath.SubtractDeltas(live, NvApi.GetCurveFreqDeltasKhz(NvApiGpu, live.Count));
-            if (VfCurveMath.Readable(stock) || waited >= 3000) return VfCurveMath.Readable(stock) ? (stock, live) : null;
+            var deltas = NvApi.GetCurveFreqDeltasKhz(NvApiGpu, live.Count);
+            var stock = VfCurveMath.SubtractDeltas(live, deltas);
+            if (VfCurveMath.Readable(stock)) { if (deltas.All(d => d == 0)) StockCurve = stock; return (StockCurve ?? stock, live); }
+            // Com offsets ativos o driver remodela a curva (pontos baixos presos no piso), e "atual menos deltas"
+            // não volta à de fábrica: usa a de fábrica lida antes, sem esperar.
+            if (StockCurve != null && StockCurve.Count == live.Count) return (StockCurve, live);
+            if (waited >= 3000) return null;
             Thread.Sleep(50);
         }
     }
 
+    /// <summary>Curva de fábrica lida com a tabela zerada (a referência confiável para calcular os deltas).</summary>
+    public IReadOnlyList<(int Mv, int Mhz)>? StockCurve { get; set; }
+
     /// <summary>Offsets aplicados hoje (para mostrar nos sliders ao abrir a aba).</summary>
     public (int CoreMhz, int MemMhz, int VoltagePercent) ReadOffsets()
     {
+        var a = ReadApplied();
+        return (a.CoreMhz, a.MemMhz, a.VoltagePercent);
+    }
+
+    /// <summary>O ajuste que está na placa agora, seja do PcismoMaster ou do Afterburner: offset do core (o delta mais
+    /// comum abaixo do teto), teto de undervolt (onde a curva efetiva fica plana até o fim), memória e tensão.</summary>
+    public (int CoreMhz, int MemMhz, int VoltagePercent, int? CapMv, int? CapMhz) ReadApplied()
+    {
         int core = 0, mem = 0, volt = 0;
+        int? capMv = null, capMhz = null;
         try
         {
             mem = EffectiveMemOffsetMhz() ?? 0;
+            volt = (int)NvApi.GetCoreVoltageBoostPercent(NvApiGpu);
             if (CurveSupported)
             {
-                // O offset global é o delta mais comum da curva (o que um slider de Core Clock grava em todos os pontos).
-                var d = NvApi.GetCurveFreqDeltasKhz(NvApiGpu, NvApi.GetVfCurve(NvApiGpu).Count).Skip(1);
-                core = d.GroupBy(x => (int)Math.Round(x / 1000.0)).OrderByDescending(g => g.Count()).FirstOrDefault()?.Key ?? 0;
+                var live = NvApi.GetVfCurve(NvApiGpu);
+                var d = NvApi.GetCurveFreqDeltasKhz(NvApiGpu, live.Count);
+                int end = live.Count;
+                if (VfCurveMath.FlatStart(live) is int f && d.Skip(f + 1).Any(x => x != 0))
+                {
+                    capMv = live[f].Mv; capMhz = live[f].Mhz; end = f;
+                }
+                core = d.Skip(1).Take(Math.Max(1, end - 1)).GroupBy(x => (int)Math.Round(x / 1000.0))
+                    .OrderByDescending(g => g.Count()).FirstOrDefault()?.Key ?? 0;
             }
-            volt = (int)NvApi.GetCoreVoltageBoostPercent(NvApiGpu);
         }
         catch (Exception) { }
-        return (core, mem, volt);
+        return (core, mem, volt, capMv, capMhz);
     }
 
     /// <summary>Offset de memória que está valendo de fato: clock absoluto da P0 menos o clock base de fábrica
@@ -162,11 +185,16 @@ public sealed class GpuOc
             if (CurveSupported)
             {
                 // Só os pontos do core: a gravação lê a tabela e troca apenas esses índices, preservando a memória.
+                string what = p.UvCapMv is int cap ? $"Core {p.CoreOffsetMhz:+0;-0;0} MHz, undervolt {cap} mV" : $"Core {p.CoreOffsetMhz:+0;-0;0} MHz";
                 Step(report, "Curva V/F", () =>
                 {
                     var curve = ReadCurve() ?? throw new NvApiException("a curva não pôde ser lida (tente de novo em instantes)");
-                    NvApi.SetCurveFreqDeltasKhz(NvApiGpu, VfCurveMath.DeltasKhz(curve.Stock, p));
-                }, p.UvCapMv is int cap ? $"Core {p.CoreOffsetMhz:+0;-0;0} MHz, undervolt {cap} mV" : $"Core {p.CoreOffsetMhz:+0;-0;0} MHz");
+                    int[] deltas = VfCurveMath.DeltasKhz(curve.Stock, p);
+                    NvApi.SetCurveFreqDeltasKhz(NvApiGpu, deltas);
+                    int[] back = NvApi.GetCurveFreqDeltasKhz(NvApiGpu, deltas.Length);
+                    int off = deltas.Select((d, i) => Math.Abs(d - back[i])).Max();
+                    if (off > 1000) throw new NvApiException($"o driver não manteve os pontos gravados (diferença de até {off / 1000} MHz)");
+                }, what + " (confirmado no driver)");
             }
             if (EffectiveMemOffsetMhz() is int got && Math.Abs(got - mem) > 1)
                 report[memLine] = $"Memory Clock: o driver aceitou {mem:+0;-0;0} MHz, mas o clock efetivo ficou em {got:+0;-0;0} MHz.";

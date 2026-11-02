@@ -72,6 +72,8 @@ public partial class MainWindow
         OcVfCanvas.MouseMove += OcVf_Move;
         OcVfCanvas.MouseLeftButtonUp += (_, _) => { _ocDrag = null; OcVfCanvas.ReleaseMouseCapture(); _settings.Save(); };
         OcVfCanvas.MouseRightButtonDown += OcVf_Right;
+        OcVfCanvas.Focusable = true;
+        OcVfCanvas.KeyDown += OcVf_Key;
         OcFanCanvas.SizeChanged += (_, _) => DrawFan();
         OcFanCanvas.MouseLeftButtonDown += OcFan_Down;
         OcFanCanvas.MouseMove += OcFan_Move;
@@ -107,8 +109,9 @@ public partial class MainWindow
     private void SyncOffsetsFromGpu()
     {
         if (_oc == null) return;
-        var (core, mem, volt) = _oc.ReadOffsets();
-        P.CoreOffsetMhz = core; P.MemOffsetMhz = mem; P.VoltagePercent = volt;
+        var a = _oc.ReadApplied();
+        P.CoreOffsetMhz = a.CoreMhz; P.MemOffsetMhz = a.MemMhz; P.VoltagePercent = a.VoltagePercent;
+        P.UvCapMv = a.CapMv; P.UvCapMhz = a.CapMhz;
         if (_oc.Power is { } pw && Nvml.PowerLimitMw(_oc.NvmlGpu) is uint lim)
             P.PowerPercent = (int)Math.Round(lim / 10.0 / pw.DefaultW);
         if (_oc.TempLimit is { } tl) P.TempLimitC ??= tl.Current;
@@ -384,11 +387,18 @@ public partial class MainWindow
 
     private void ReadVfCurve()
     {
-        _vfStock = null;
+        // Uma leitura que falha não apaga a curva de fábrica já conhecida (ela não muda com o overclock).
         if (_oc?.CurveSupported == true)
         {
-            try { _vfStock = _oc.ReadCurve()?.Stock; }
+            if (_oc.StockCurve == null && _settings.OcStockCurve is { Count: > 0 } saved)
+                _oc.StockCurve = saved.Select(p => (p[0], p[1])).ToList();
+            try { _vfStock = _oc.ReadCurve()?.Stock ?? _vfStock; }
             catch (Exception ex) { OcVfInfo.Text = "Não foi possível ler a curva: " + ex.Message; }
+            if (_oc.StockCurve is { } stock && _settings.OcStockCurve?.Count != stock.Count)
+            {
+                _settings.OcStockCurve = stock.Select(p => new[] { p.Mv, p.Mhz }).ToList();
+                _settings.Save();
+            }
         }
         DrawVf();
     }
@@ -456,6 +466,20 @@ public partial class MainWindow
             int ci = VfCurveMath.NearestIndex(_vfStock, cap);
             var a = VfPoint(_vfStock[ci].Mv, r.Y0, r); var b = VfPoint(_vfStock[ci].Mv, r.Y1, r);
             OcVfCanvas.Children.Add(new Line { X1 = a.X, Y1 = a.Y, X2 = b.X, Y2 = b.Y, Stroke = (Brush)FindResource("TempWarn"), StrokeDashArray = new DoubleCollection { 4, 3 } });
+            var c = VfPoint(_vfStock[ci].Mv, target[ci], r);
+            var ring = new Ellipse { Width = 14, Height = 14, Stroke = (Brush)FindResource("TempWarn"), StrokeThickness = 2 };
+            Canvas.SetLeft(ring, c.X - 7); Canvas.SetTop(ring, c.Y - 7);
+            OcVfCanvas.Children.Add(ring);
+            var tag = new TextBlock { Text = $"{_vfStock[ci].Mv} mV · {target[ci]} MHz", FontSize = 12, FontWeight = FontWeights.SemiBold, Foreground = (Brush)FindResource("TempWarn") };
+            Canvas.SetLeft(tag, Math.Max(0, c.X - 150)); Canvas.SetTop(tag, Math.Max(0, c.Y - 26));
+            OcVfCanvas.Children.Add(tag);
+        }
+        if (_vfSel is int sel && sel < _vfStock.Count)
+        {
+            var c = VfPoint(_vfStock[sel].Mv, target[sel], r);
+            var ring = new Ellipse { Width = 12, Height = 12, Stroke = (Brush)FindResource("Fg"), StrokeThickness = 1.5 };
+            Canvas.SetLeft(ring, c.X - 6); Canvas.SetTop(ring, c.Y - 6);
+            OcVfCanvas.Children.Add(ring);
         }
         if (_ocSamples.LastOrDefault() is { CoreMv: int lmv, CoreMhz: uint lmhz } && lmv >= r.X0 && lmv <= r.X1)
         {
@@ -493,10 +517,16 @@ public partial class MainWindow
         return best;
     }
 
+    private int? _vfSel;
+
+    private int CapIndex => P.UvCapMv is int cap && _vfStock != null ? VfCurveMath.NearestIndex(_vfStock, cap) : -1;
+
     private void OcVf_Down(object sender, MouseButtonEventArgs e)
     {
         _ocDrag = NearestVfPoint(e.GetPosition(OcVfCanvas));
-        if (_ocDrag != null) OcVfCanvas.CaptureMouse();
+        if (_ocDrag != null) { _vfSel = _ocDrag; OcVfCanvas.CaptureMouse(); }
+        OcVfCanvas.Focus();
+        DrawVf();
     }
 
     private void OcVf_Move(object sender, MouseEventArgs e)
@@ -505,11 +535,26 @@ public partial class MainWindow
         var r = VfRange(VfCurveMath.TargetMhz(_vfStock, P));
         double h = OcVfCanvas.ActualHeight;
         int mhz = (int)(Math.Round((r.Y0 + ((h - 22) - e.GetPosition(OcVfCanvas).Y) / (h - 30) * (r.Y1 - r.Y0)) / 5) * 5);
-        int extra = P.PointOffsetsMhz.TryGetValue(i, out int o) ? o : 0;
         if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
         {
+            int extra = P.PointOffsetsMhz.TryGetValue(i, out int o) ? o : 0;
             int core = Math.Clamp(mhz - _vfStock[i].Mhz - extra, _oc?.CoreRangeMhz.Min ?? -1000, _oc?.CoreRangeMhz.Max ?? 1000);
             if (_ocSliders.TryGetValue("core", out var s)) s.Slider.Value = core; else P.CoreOffsetMhz = core;
+            DrawVf();
+        }
+        else SetVfPointMhz(i, mhz);
+    }
+
+    /// <summary>Leva um ponto a um clock. No teto do undervolt (ou acima dele, na parte plana) muda o clock do teto,
+    /// como arrastar o ponto travado no Afterburner; abaixo dele, muda só aquele ponto.</summary>
+    private void SetVfPointMhz(int i, int mhz)
+    {
+        if (_vfStock == null) return;
+        if (CapIndex >= 0 && i >= CapIndex)
+        {
+            int ci = CapIndex;
+            P.UvCapMhz = Math.Clamp(mhz, _vfStock[ci].Mhz - VfCurveMath.MaxDeltaMhz, _vfStock[ci].Mhz + VfCurveMath.MaxDeltaMhz);
+            OcUvMhz.Text = P.UvCapMhz.ToString();
         }
         else
         {
@@ -519,13 +564,58 @@ public partial class MainWindow
         DrawVf();
     }
 
-    private void OcVf_Right(object sender, MouseButtonEventArgs e)
+    /// <summary>Trava (ou destrava) o teto de undervolt no ponto, no clock em que ele está agora — a tecla L do Afterburner.</summary>
+    private void LockVfAt(int i)
     {
-        if (NearestVfPoint(e.GetPosition(OcVfCanvas)) is not int i || _vfStock == null) return;
-        P.UvCapMv = _vfStock[i].Mv;
-        P.UvCapMhz = int.TryParse(OcUvMhz.Text, out int mhz) ? mhz : null;
+        if (_vfStock == null) return;
+        if (CapIndex == i) { P.UvCapMv = null; P.UvCapMhz = null; OcUvMhz.Text = ""; }
+        else
+        {
+            int mhz = int.TryParse(OcUvMhz.Text, out int typed) && P.UvCapMv == null ? typed : VfCurveMath.TargetMhz(_vfStock, P)[i];
+            P.UvCapMv = _vfStock[i].Mv;
+            P.UvCapMhz = mhz;
+            OcUvMhz.Text = mhz.ToString();
+        }
         _settings.Save();
         DrawVf();
+    }
+
+    private void OcVf_Right(object sender, MouseButtonEventArgs e)
+    {
+        if (NearestVfPoint(e.GetPosition(OcVfCanvas)) is not int i) return;
+        _vfSel = i;
+        LockVfAt(i);
+    }
+
+    private void OcVf_Key(object sender, KeyEventArgs e)
+    {
+        if (_vfSel is not int i || _vfStock == null) return;
+        int[] target = VfCurveMath.TargetMhz(_vfStock, P);
+        int step = Keyboard.Modifiers.HasFlag(ModifierKeys.Control) ? 25 : 5;
+        switch (e.Key)
+        {
+            case Key.L: LockVfAt(i); break;
+            case Key.Up: SetVfPointMhz(i, target[i] + step); break;
+            case Key.Down: SetVfPointMhz(i, target[i] - step); break;
+            case Key.Left when i > 1: _vfSel = i - 1; DrawVf(); break;
+            case Key.Right when i < _vfStock.Count - 1: _vfSel = i + 1; DrawVf(); break;
+            default: return;
+        }
+        _settings.Save();
+        e.Handled = true;
+    }
+
+    private void BtnOcImport_Click(object sender, RoutedEventArgs e)
+    {
+        if (_oc == null) return;
+        P.PointOffsetsMhz.Clear();
+        SyncOffsetsFromGpu();
+        ReadVfCurve();
+        SyncOcSliders();
+        _settings.Save();
+        OcGpuResult.Text = $"Lido da placa: Core {P.CoreOffsetMhz:+0;-0;0} MHz, memória {P.MemOffsetMhz:+0;-0;0} MHz"
+            + (P.UvCapMv is int cap ? $", teto em {cap} mV a {P.UvCapMhz} MHz." : ", sem teto de undervolt.")
+            + " Vale também para o que foi aplicado no MSI Afterburner.";
     }
 
     private void OcUvMhz_Changed(object sender, RoutedEventArgs e)

@@ -72,6 +72,12 @@ Test("V/F: stock recovery and readability check", () => {
     Assert(back.SequenceEqual(stockCurve)); Assert(VfCurveMath.Readable(stockCurve));
     Assert(!VfCurveMath.Readable(stockCurve.Select((c, i) => (c.Mv, i == 20 ? 50 : c.Mhz)).ToList()));
 });
+Test("V/F: detects the flat top an undervolt leaves (and not a rising stock curve)", () => {
+    Assert(VfCurveMath.FlatStart(stockCurve) == null);
+    var flat = VfCurveMath.TargetMhz(stockCurve, new OcProfile { CoreOffsetMhz = 100, UvCapMv = 900, UvCapMhz = 2100 })
+        .Select((m, i) => (stockCurve[i].Mv, m)).ToList();
+    Assert(VfCurveMath.FlatStart(flat) == VfCurveMath.NearestIndex(stockCurve, 900));
+});
 Test("Fan curve interpolates, clamps at the ends and holds with hysteresis", () => {
     var curve = new List<FanPoint> { new(40, 30), new(80, 90) };
     Assert(FanCurveMath.SpeedAt(curve, 20) == 30); Assert(FanCurveMath.SpeedAt(curve, 60) == 60); Assert(FanCurveMath.SpeedAt(curve, 95) == 90);

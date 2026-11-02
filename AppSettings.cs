@@ -75,6 +75,8 @@ public sealed class AppSettings
     public Modular.OcProfile?[] OcProfiles { get; set; } = new Modular.OcProfile?[5];
     public Modular.OcProfile? OcApplied { get; set; }
     public bool OcApplyOnStart { get; set; }
+    /// <summary>Curva V/F de fábrica (mV, MHz) lida sem offsets; serve de referência quando o app abre com overclock já aplicado.</summary>
+    public List<int[]>? OcStockCurve { get; set; }
 
     // Overlay
     public string OverlayCorner { get; set; } = "TL";

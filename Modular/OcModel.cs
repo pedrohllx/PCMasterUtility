@@ -84,6 +84,16 @@ public static class VfCurveMath
         return best;
     }
 
+    /// <summary>Onde a curva efetiva fica plana até o fim (teto de undervolt), ou null se ela sobe até o último ponto.
+    /// Exige um platô de pelo menos 3 pontos para não confundir com o topo natural da curva.</summary>
+    public static int? FlatStart(IReadOnlyList<(int Mv, int Mhz)> curve)
+    {
+        if (curve.Count < 4) return null;
+        int top = curve[^1].Mhz, f = curve.Count - 1;
+        while (f > 0 && Math.Abs(curve[f - 1].Mhz - top) <= 2) f--;
+        return curve.Count - f >= 3 && curve.Take(f).All(p => p.Mhz < top) ? f : null;
+    }
+
     /// <summary>Curva de fábrica = curva atual menos os deltas aplicados.</summary>
     public static IReadOnlyList<(int Mv, int Mhz)> SubtractDeltas(IReadOnlyList<(int Mv, int Mhz)> live, int[] deltasKhz)
         => live.Select((p, i) => (p.Mv, p.Mhz - (i < deltasKhz.Length ? (int)Math.Round(deltasKhz[i] / 1000.0) : 0))).ToList();
