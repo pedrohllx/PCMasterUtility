@@ -1,0 +1,38 @@
+name: Lançar versão
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet run --project tests/ModuleTests.csproj -c Release
+      - run: dotnet publish PcismoMaster.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o dist --nologo
+      - name: Empacotar e extrair notas do CHANGELOG
+        shell: pwsh
+        run: |
+          $ver = '${{ github.ref_name }}'.TrimStart('v')
+          $csproj = ([xml](Get-Content PcismoMaster.csproj)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+          if ($csproj -ne $ver) { throw "Tag v$ver não bate com Version $csproj do csproj" }
+          Get-ChildItem dist -Filter *.pdb | Remove-Item
+          Compress-Archive -Path dist\* -DestinationPath "PcismoMaster-$ver-win-x64.zip"
+          Copy-Item dist\PcismoMaster.exe "PcismoMaster-$ver.exe"
+          $lines = Get-Content CHANGELOG.md
+          $start = [array]::IndexOf($lines, "## $ver")
+          if ($start -lt 0) { throw "Seção ## $ver não encontrada no CHANGELOG" }
+          $notes = $lines[($start + 1)..($lines.Count - 1)] | ForEach-Object -Begin { $stop = $false } -Process { if ($_ -match '^## ') { $stop = $true }; if (-not $stop) { $_ } }
+          ($notes -join "`n").Trim() | Set-Content notas.md -Encoding utf8
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: PcismoMaster ${{ github.ref_name }}
+          body_path: notas.md
+          files: |
+            PcismoMaster-*.exe
+            PcismoMaster-*-win-x64.zip
