@@ -35,6 +35,8 @@ public sealed class GpuDriverStatus
     public string Message { get; set; } = "";
     /// <summary>Placa sem driver de vídeo (o Windows a mostra como "Adaptador de Vídeo Básico", como depois do DDU).</summary>
     public bool NoDriver { get; set; }
+    /// <summary>Código PCI do modelo (DEV_xxxx), lido mesmo sem driver; 0 se desconhecido.</summary>
+    public int DeviceId { get; set; }
     public bool CanAutoInstall => Vendor is "NVIDIA" or "AMD" && DownloadUrl.Length > 0;
     public bool UpdateAvailable =>
         Vendor == "NVIDIA" && Latest.Length > 0 && (NoDriver || Installed.Length > 0 && CompareVersions(Latest, Installed) > 0);
@@ -159,7 +161,7 @@ public static class DriverManager
                 string ver = Str(o, "DriverVersion") ?? "";
                 bool basic = name.Contains("Microsoft Basic", StringComparison.OrdinalIgnoreCase);
                 if (name.Length == 0 || basic && pciVendor.Length == 0) continue;
-                var g = new GpuDriverStatus { GpuName = basic ? $"Placa {pciVendor} (sem driver de vídeo)" : name, NoDriver = basic };
+                var g = new GpuDriverStatus { GpuName = basic ? $"Placa {pciVendor} (sem driver de vídeo)" : name, NoDriver = basic, DeviceId = GpuCard.DeviceIdOf(pnp) };
                 if (maker.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase))
                 {
                     g.Vendor = "NVIDIA"; g.Installed = NvidiaFriendly(ver);
@@ -191,10 +193,10 @@ public static class DriverManager
         g.Latest = ""; g.DownloadUrl = ""; g.SizeText = "";
         try
         {
-            // O driver GeForce é unificado: se o modelo não puder ser identificado (placa sem driver, escolhida à mão),
-            // a consulta usa uma GeForce de mesa qualquer — a mesma do Ultimate — e devolve o driver atual para todas.
+            // Modelo pelo nome; sem driver (depois do DDU), pela geração do código PCI e por ser notebook ou não — assim GTX 900/10
+            // e notebooks recebem o driver da série deles. Só se nada disso der, a consulta usa uma GeForce de mesa qualquer (a do Ultimate).
             (int psid, int pfid) ids;
-            try { ids = g.NoDriver ? (120, 929) : await ResolveNvidiaIdsAsync(g.GpuName, ct); }
+            try { ids = await ResolveNvidiaIdsAsync(g, ct); }
             catch (OperationCanceledException) { throw; }
             catch { ids = (120, 929); }
             var (psid, pfid) = ids;
@@ -292,28 +294,43 @@ public static class DriverManager
     }
 
     /// <summary>Descobre os códigos de série (psid) e produto (pfid) da placa na base de drivers da NVIDIA.</summary>
-    private static async Task<(int psid, int pfid)> ResolveNvidiaIdsAsync(string gpuName, CancellationToken ct)
+    private static async Task<(int psid, int pfid)> ResolveNvidiaIdsAsync(GpuDriverStatus g, CancellationToken ct)
     {
-        bool mobile = Regex.IsMatch(gpuName, @"Laptop|Max-Q|Mobile|Notebook", RegexOptions.IgnoreCase);
+        string gpuName = g.NoDriver ? "" : g.GpuName;
+        // Notebooks antigos (GTX 10 e antes) não têm "Laptop" no nome: confere também o gabinete do PC.
+        bool mobile = Regex.IsMatch(gpuName, @"Laptop|Max-Q|Mobile|Notebook", RegexOptions.IgnoreCase) || GpuDetect.IsLaptop();
         var m = Regex.Match(gpuName, @"(RTX|GTX|GT)\s*(\d{3,4})", RegexOptions.IgnoreCase);
-        if (!m.Success) throw new InvalidOperationException("Modelo de placa não reconhecido: " + gpuName);
-        string prefix = m.Groups[1].Value.ToUpperInvariant();
-        int n = int.Parse(m.Groups[2].Value);
 
         string series;
-        if (prefix == "RTX") series = $"RTX {n / 100} Series";
-        else if (n >= 1600 && n < 1700) series = "16 Series";
-        else if (n >= 1000 && n < 1100) series = "10 Series";
-        else if (n >= 900 && n < 1000) series = "900 Series";
-        else if (n >= 700 && n < 800) series = "700 Series";
-        else series = $"{n / 100 * 100} Series";
-        if (prefix == "RTX" && n >= 2000) series = $"RTX {n / 100} Series";
+        var mx = Regex.Match(gpuName, @"\bMX\s*(\d{3})", RegexOptions.IgnoreCase);
+        if (mx.Success) { series = $"MX{int.Parse(mx.Groups[1].Value) / 100 * 100} Series"; mobile = true; }
+        else if (m.Success)
+        {
+            string prefix = m.Groups[1].Value.ToUpperInvariant();
+            int n = int.Parse(m.Groups[2].Value);
+            if (prefix == "RTX") series = $"RTX {n / 100} Series";
+            else if (n >= 1600 && n < 1700) series = "16 Series";
+            else if (n >= 1000 && n < 1100) series = "10 Series";
+            else if (n >= 900 && n < 1000) series = "900 Series";
+            else if (n >= 700 && n < 800) series = "700 Series";
+            else series = $"{n / 100 * 100} Series";
+        }
+        else
+        {
+            // Sem nome (sem driver, TITAN, Quadro…): pela geração do código PCI.
+            string arch = GpuCard.ArchOf(g.DeviceId);
+            bool rtx = GpuCard.IsRtx(arch, "", g.DeviceId);
+            series = new GpuCard(gpuName, g.DeviceId, arch, rtx, 0, mobile, false).DriverSeries
+                     ?? throw new InvalidOperationException("Modelo de placa não reconhecido: " + g.GpuName);
+        }
 
         string xml = await Http.GetStringAsync("https://www.nvidia.com/Download/API/lookupValueSearch.aspx?TypeID=2&ParentID=1", ct);
         var seriesList = XDocument.Parse(xml).Descendants("LookupValue")
             .Select(x => (Name: (string?)x.Element("Name") ?? "", Value: (string?)x.Element("Value") ?? "")).ToList();
-        var cand = seriesList.Where(s => s.Name.Contains(series, StringComparison.OrdinalIgnoreCase)
+        List<(string Name, string Value)> SeriesNamed(string name) => seriesList.Where(s => s.Name.Contains(name, StringComparison.OrdinalIgnoreCase)
                                          && s.Name.Contains("Notebook", StringComparison.OrdinalIgnoreCase) == mobile).OrderBy(s => s.Name.Length).ToList();
+        var cand = SeriesNamed(series);
+        if (cand.Count == 0 && mobile) cand = SeriesNamed(series.Replace(" Series", "M Series")); // notebooks antigos: "GeForce 900M Series (Notebooks)"
         if (cand.Count == 0) throw new InvalidOperationException("Série da placa não encontrada na NVIDIA (" + series + ").");
         int psid = int.Parse(cand[0].Value);
 

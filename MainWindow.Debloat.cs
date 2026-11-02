@@ -16,7 +16,8 @@ public partial class MainWindow
         _debloatVendors = vendors;
         DebloatRows.Children.Clear();
         _debloatToggles.Clear();
-        var items = DriverDebloat.Nvidia.Concat(DriverDebloat.Amd).Concat(DriverDebloat.Intel).Where(i => vendors.Contains(i.Vendor)).ToList();
+        var items = DriverDebloat.Nvidia.Concat(DriverDebloat.Amd).Concat(DriverDebloat.Intel).Where(i => vendors.Contains(i.Vendor))
+            .Select(i => GpuRules.ForCard(i, _gfxCard)).ToList();
         var (applied, has7z) = await Task.Run(() => (items.Where(i => i.Vendor != "nvidia").ToDictionary(i => i.Id, DriverDebloat.IsApplied), DriverDebloat.SevenZip() != null));
 
         foreach (var vendor in new[] { "nvidia", "amd", "intel" }.Where(vendors.Contains))

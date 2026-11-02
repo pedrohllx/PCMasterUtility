@@ -885,6 +885,7 @@
                                         <TextBlock Text="Driver novo instalado do zero e os ajustes de desempenho do driver e do Windows, cada um com desfazer" Foreground="{DynamicResource Muted}" FontSize="12"/>
                                     </StackPanel>
                                 </StackPanel>
+                                <TextBlock x:Name="GfxCardInfo" Visibility="Collapsed" Foreground="{DynamicResource AccentCyan}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,10"/>
                                 <WrapPanel x:Name="GfxNvInstallRow" Margin="0,0,0,8">
                                     <Button x:Name="BtnGfxNvInstall" Style="{StaticResource PrimaryButton}" Content="Instalar driver NVIDIA (silencioso e limpo)" Padding="16,8" Margin="0,0,10,6" Click="BtnGfxNvInstall_Click"
                                             ToolTip="Baixa o driver oficial, confere a assinatura e instala sem telas, apagando as configurações antigas do driver (como o script)"/>

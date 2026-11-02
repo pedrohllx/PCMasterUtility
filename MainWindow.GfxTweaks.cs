@@ -10,6 +10,8 @@ namespace ResetExplode;
 public partial class MainWindow
 {
     private bool _gfxInit, _gfxBusy;
+    /// <summary>A placa NVIDIA deste PC (as configurações e a instalação enxuta se ajustam a ela).</summary>
+    private GpuCard? _gfxCard;
     private readonly Dictionary<string, CheckBox> _gfxToggles = new();
 
     // Interruptores que não são do registro: as configurações do perfil global (Profile Inspector)
@@ -21,7 +23,12 @@ public partial class MainWindow
         _gfxInit = true;
         GfxStatus.Text = "Lendo o que já está aplicado…";
         // Quais fabricantes existem neste PC (pelo código PCI, mesmo sem driver).
-        var vendors = await Task.Run(() => DriverManager.ReadGpus().Select(g => g.Vendor.ToLowerInvariant()).Where(v => v.Length > 0).Distinct().ToList());
+        var (vendors, card) = await Task.Run(() =>
+            (DriverManager.ReadGpus().Select(g => g.Vendor.ToLowerInvariant()).Where(v => v.Length > 0).Distinct().ToList(), GpuDetect.DetectNvidia()));
+        _gfxCard = card;
+        var notes = GpuRules.Adaptations(card);
+        GfxCardInfo.Text = card == null ? "" : "Sua placa: " + card.Summary + (notes.Count > 0 ? ". Ajustado para ela: " + string.Join("; ", notes) + "." : ". As configurações do script servem para ela como estão.");
+        GfxCardInfo.Visibility = card == null ? Visibility.Collapsed : Visibility.Visible;
         bool nvidia = vendors.Contains("nvidia");
         GfxNvInstallRow.Visibility = nvidia ? Visibility.Visible : Visibility.Collapsed;
         if (DebloatRows.Children.Count == 0) InitDebloat(vendors);
@@ -39,8 +46,8 @@ public partial class MainWindow
             if (vendor == "nvidia")
             {
                 GfxRow(DrsNip, "Perfil global recomendado (Profile Inspector)", false,
-                    "Low Latency Ultra, VSync forçado desligado, energia em desempenho máximo, filtragem em alto desempenho, cache de shader ilimitado, " +
-                    "otimização em threads e mais (o .nip do script). Antes, o valor atual de cada um é guardado.", GraphicsTweaks.DrsApplied(DrsNip), firstTime);
+                    "Low Latency Ultra, VSync forçado desligado, " + (card?.Laptop == true ? "" : "energia em desempenho máximo, ") + "filtragem em alto desempenho, cache de shader ilimitado, " +
+                    "otimização em threads e mais (o .nip do script" + (notes.Count > 0 ? ", ajustado à sua placa" : "") + "). Antes, o valor atual de cada um é guardado.", GraphicsTweaks.DrsApplied(DrsNip), firstTime);
                 GfxRow(DrsGsync, "Desligar o G-SYNC", true,
                     "Desliga o G-SYNC em todos os jogos (parte do script). Deixe desligado se você usa monitor G-SYNC/FreeSync.", GraphicsTweaks.DrsApplied(DrsGsync), false);
             }
@@ -115,7 +122,7 @@ public partial class MainWindow
             });
             foreach (var id in turnOn) Try(id, () =>
             {
-                if (id == DrsNip) GraphicsTweaks.ApplyDrs(id, GraphicsTweaks.NipSettings);
+                if (id == DrsNip) GraphicsTweaks.ApplyDrs(id, GraphicsTweaks.NipFor(_gfxCard));
                 else if (id == DrsGsync) GraphicsTweaks.ApplyDrs(id, GraphicsTweaks.GsyncOff);
                 else
                 {

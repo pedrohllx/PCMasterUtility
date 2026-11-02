@@ -5,8 +5,6 @@ using ResetExplode.Modular;
 
 namespace ResetExplode;
 
-/// <summary>Um componente/limpeza da instalação enxuta. <paramref name="Default"/> = já vem marcado para remover.</summary>
-public sealed record DebloatItem(string Id, string Vendor, string Title, string Description, bool Default, bool Warn);
 
 /// <summary>
 /// Instalação enxuta do driver de vídeo ("5 Graphics/4 Driver Debloat Install &amp; Settings" do Ultimate, MIT):

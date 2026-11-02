@@ -4,6 +4,11 @@ A numeração segue **SemVer** (`MAJOR.MINOR.PATCH`). Regras e processo em [docs
 
 ## Em desenvolvimento
 
+- **Drivers · driver e configurações ajustados à placa de cada PC** (os scripts do Ultimate foram feitos para a RTX 4090 de mesa do autor):
+  - O app identifica a placa NVIDIA pelo código PCI (funciona até sem driver, depois do DDU): geração (Kepler até Blackwell), RTX ou GTX, memória, notebook ou PC de mesa e gráfico híbrido. O cartão mostra "Sua placa: …" e o que foi ajustado.
+  - **Driver certo**: sem driver, a busca usa a geração da placa e se é notebook, em vez de uma RTX de mesa qualquer. Assim GTX 900/10 recebem o último driver que as suporta e notebooks recebem o driver de notebook (inclusive 900M/700M e MX).
+  - **Perfil global ajustado**: notebook mantém a energia do driver (desempenho máximo gasta bateria e esquenta parado); placa de até 8 GB mantém o Sysmem Fallback (CUDA/IA não trava por falta de memória); notebook com gráfico híbrido usa a NVIDIA como placa preferida, o equivalente do "Preferred OpenGL GPU" fixo da 4090.
+  - **Instalação enxuta ajustada**: DLDSR sai em placas GTX (só existe em RTX), o Platform Controller sai em PC de mesa e fica em notebook (Dynamic Boost), e a porta USB-C fica nas RTX 20 de mesa.
 - **Drivers · NVIDIA Settings** (o "5 Graphics/5 Nvidia Settings" do Ultimate; as configurações dele já estavam no cartão de configurações recomendadas, com desfazer):
   - Botões **Abrir Painel de Controle NVIDIA** (sem ele instalado, abre a página na Microsoft Store em vez de instalar um .appx de espelho) e **Atalho na Área de Trabalho**.
   - **Perfil global NVIDIA no padrão do driver** (a opção "Default" do script), com aviso de que tira tudo o que foi mudado no perfil global e não tem desfazer.

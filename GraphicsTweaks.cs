@@ -181,6 +181,9 @@ public static class GraphicsTweaks
         (549528094, 1, "Threaded Optimization"), (544392611, 0, "OpenGL GDI Compatibility"),
     };
 
+    /// <summary>O .nip do script ajustado à placa deste PC (regras em <see cref="GpuRules.Adapt"/>).</summary>
+    public static (uint Id, uint Value, string Name)[] NipFor(GpuCard? card) => GpuRules.Adapt(NipSettings, card);
+
     /// <summary>G-SYNC desligado no perfil global (separado: quem tem monitor G-SYNC normalmente quer manter).</summary>
     public static readonly (uint Id, uint Value, string Name)[] GsyncOff =
     {

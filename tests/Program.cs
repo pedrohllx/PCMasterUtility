@@ -1,3 +1,4 @@
+using ResetExplode;
 using ResetExplode.Modular;
 using Microsoft.Win32;
 
@@ -109,6 +110,27 @@ Test("Remove settings delete the value and restore brings it back", () => {
     fake.Values[run.Settings[0]] = new(true, 1, "\"C:\\\\amd.exe\"");
     var engine = Engine("remove"); engine.Enable(run); Assert(engine.Matches(run)); Assert(!fake.Read(run.Settings[0]).Exists);
     engine.Restore(run); Assert(fake.Read(run.Settings[0]) == new SavedValue(true, 1, "\"C:\\\\amd.exe\""));
+});
+Test("GPU generation and driver series from the PCI device ID", () => {
+    Assert(GpuCard.ArchOf(0x2684) == "Ada" && GpuCard.ArchOf(0x2504) == "Ampere" && GpuCard.ArchOf(0x1B80) == "Pascal" && GpuCard.ArchOf(0x13C2) == "Maxwell");
+    Assert(GpuCard.ArchOf(0x2C02) == "Blackwell" && GpuCard.ArchOf(0x2182) == "Turing" && GpuCard.ArchOf(0x0001) == "");
+    Assert(new GpuCard("", 0x2182, "Turing", false, 0, false, false).DriverSeries == "16 Series");
+    Assert(new GpuCard("", 0x1E87, "Turing", true, 0, false, false).DriverSeries == "RTX 20 Series");
+    Assert(new GpuCard("", 0x1B80, "Pascal", false, 0, false, false).DriverSeries == "10 Series");
+    Assert(GpuCard.DeviceIdOf(@"PCI\VEN_10DE&DEV_2684&SUBSYS_16F310DE") == 0x2684);
+});
+Test("Recommended profile adapts to the card", () => {
+    var desk = new GpuCard("RTX 4090", 0x2684, "Ada", true, 24576, false, false);
+    var lap = new GpuCard("RTX 3060 Laptop", 0x2560, "Ampere", true, 6144, true, true);
+    var nip = new (uint, uint, string)[] { (GpuRules.PowerMode, 1, "p"), (GpuRules.SysmemFallback, 1, "s"), (549528094, 1, "t") };
+    Assert(GpuRules.Adapt(nip, desk).Length == 3);
+    var l = GpuRules.Adapt(nip, lap);
+    Assert(l.Length == 3 && l.Any(x => x.Id == 549528094) && l.Any(x => x.Id == GpuRules.OptimusRendering) && !l.Any(x => x.Id == GpuRules.PowerMode));
+    var gtx = new GpuCard("GTX 1660", 0x2184, "Turing", false, 6144, false, false);
+    var dlisr = new DebloatItem("NvDLISR", "nvidia", "t", "d", false, true); var pcf = new DebloatItem("NVPCF", "nvidia", "t", "d", false, true);
+    Assert(GpuRules.ForCard(dlisr, gtx).Default && !GpuRules.ForCard(dlisr, desk).Default);
+    Assert(!GpuRules.ForCard(pcf, lap).Default && GpuRules.ForCard(pcf, desk).Default);
+    Assert(GpuCard.ArchOf(0x17C8) == "Maxwell" && GpuCard.IsRtx("Turing", "", 0x1F08) && !GpuCard.IsRtx("Turing", "NVIDIA GeForce GTX 1650", 0x1F82));
 });
 Test("Real registry roundtrip only inside isolated test key", () => {
     var path = @"Software\PcismoMaster.Tests\" + Guid.NewGuid();
