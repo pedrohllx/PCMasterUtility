@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -67,13 +67,13 @@ public partial class MainWindow
             Closed += (_, _) => { _ocTimer.Stop(); if (_ocFansTouched) _oc?.FansAuto(); };
         }
 
-        OcVfCanvas.SizeChanged += (_, _) => DrawVf();
-        OcVfCanvas.MouseLeftButtonDown += OcVf_Down;
-        OcVfCanvas.MouseMove += OcVf_Move;
-        OcVfCanvas.MouseLeftButtonUp += (_, _) => { _ocDrag = null; OcVfCanvas.ReleaseMouseCapture(); _settings.Save(); };
-        OcVfCanvas.MouseRightButtonDown += OcVf_Right;
-        OcVfCanvas.Focusable = true;
-        OcVfCanvas.KeyDown += OcVf_Key;
+        HookVfCanvas(OcVfCanvas);
+        // Ctrl+F na aba Overclock abre o editor de curva em janela própria, como no Afterburner.
+        PreviewKeyDown += (_, e) =>
+        {
+            if (e.Key == Key.F && Keyboard.Modifiers == ModifierKeys.Control && PageOc.Visibility == Visibility.Visible) { ToggleVfWindow(); e.Handled = true; }
+        };
+        Closed += (_, _) => _vfWindow?.Close();
         OcFanCanvas.SizeChanged += (_, _) => DrawFan();
         OcFanCanvas.MouseLeftButtonDown += OcFan_Down;
         OcFanCanvas.MouseMove += OcFan_Move;
@@ -403,23 +403,46 @@ public partial class MainWindow
         DrawVf();
     }
 
+    // Margens do gráfico: espaço para a escala de MHz à esquerda, o título no topo e a escala de mV + título embaixo.
+    private const double VfLeft = 46, VfRight = 26, VfTop = 22, VfBottom = 36;
+
+    /// <summary>Faixa visível como no Afterburner: começa onde a curva sai do piso (a parte plana de baixo fica de fora),
+    /// grade de 25 mV × 100 MHz e folga em cima para o overclock.</summary>
     private (double X0, double X1, double Y0, double Y1) VfRange(int[] target)
     {
         var s = _vfStock!;
-        double y0 = Math.Min(s.Min(p => p.Mhz), target.Min()) - 100, y1 = Math.Max(s.Max(p => p.Mhz), target.Max()) + 150;
-        return (s[0].Mv - 10, s[^1].Mv + 10, Math.Max(0, y0), y1);
+        int floor = s.Skip(1).Min(p => p.Mhz), first = 1;
+        while (first < s.Count - 1 && s[first].Mhz <= floor + 50) first++;
+        double x0 = Math.Floor((s[first].Mv - 30) / 25.0) * 25, x1 = Math.Ceiling(s[^1].Mv / 25.0) * 25;
+        double low = Math.Min(s[first].Mhz, target.Skip(first).Min());
+        // O Afterburner não desce a escala abaixo de 500 MHz: o que o offset empurra para baixo disso só sai do quadro.
+        double y0 = Math.Max(s.Max(p => p.Mhz) > 1500 ? 500 : 0, Math.Floor(low / 100) * 100), y1 = Math.Ceiling((Math.Max(s.Max(p => p.Mhz), target.Max()) + 250) / 100.0) * 100;
+        return (x0, Math.Max(x1, x0 + 100), y0, y1);
     }
 
-    private Point VfPoint(double mv, double mhz, (double X0, double X1, double Y0, double Y1) r)
+    private static Point VfPoint(Canvas c, double mv, double mhz, (double X0, double X1, double Y0, double Y1) r)
     {
-        double w = OcVfCanvas.ActualWidth, h = OcVfCanvas.ActualHeight;
-        return new Point(44 + (mv - r.X0) / (r.X1 - r.X0) * (w - 52), (h - 22) - (mhz - r.Y0) / (r.Y1 - r.Y0) * (h - 30));
+        double w = c.ActualWidth - VfLeft - VfRight, h = c.ActualHeight - VfTop - VfBottom;
+        return new Point(VfLeft + (mv - r.X0) / (r.X1 - r.X0) * w, VfTop + h - (mhz - r.Y0) / (r.Y1 - r.Y0) * h);
     }
 
+    private static int VfMhzAt(Canvas c, double y, (double X0, double X1, double Y0, double Y1) r)
+    {
+        double h = c.ActualHeight - VfTop - VfBottom;
+        return (int)(Math.Round((r.Y0 + (VfTop + h - y) / h * (r.Y1 - r.Y0)) / 5) * 5);
+    }
+
+    /// <summary>Redesenha a curva na aba e, se estiver aberta, na janela do editor (Ctrl+F).</summary>
     private void DrawVf()
     {
         if (!IsLoaded || OcVfCanvas == null) return;
-        OcVfCanvas.Children.Clear();
+        DrawVfOn(OcVfCanvas);
+        if (_vfWindow?.Content is Grid g && g.Children[0] is Canvas wc) DrawVfOn(wc);
+    }
+
+    private void DrawVfOn(Canvas canvas)
+    {
+        canvas.Children.Clear();
         if (_vfStock == null)
         {
             if (_oc?.CurveSupported == true && string.IsNullOrEmpty(OcVfInfo.Text))
@@ -427,82 +450,98 @@ public partial class MainWindow
             else if (_oc?.CurveSupported != true) OcVfInfo.Text = "Editor de curva indisponível nesta placa ou driver.";
             return;
         }
-        if (OcVfCanvas.ActualWidth < 100) return;
+        if (canvas.ActualWidth < 200 || canvas.ActualHeight < 120) return;
         int[] target = VfCurveMath.TargetMhz(_vfStock, P);
         var r = VfRange(target);
-        var faint = (Brush)FindResource("Line");
+        var grid = (Brush)FindResource("Line");
         var muted = (Brush)FindResource("Muted");
-        for (int mv = (int)Math.Ceiling(r.X0 / 100) * 100; mv <= r.X1; mv += 100)
+        var curve = (Brush)FindResource("Fg");
+        Point Pt(double mv, double mhz) => VfPoint(canvas, mv, mhz, r);
+
+        // Grade do Afterburner: uma linha a cada 25 mV e a cada 100 MHz; os números pulam marcas quando não cabem.
+        double plotW = canvas.ActualWidth - VfLeft - VfRight, plotH = canvas.ActualHeight - VfTop - VfBottom;
+        int xEvery = Math.Max(1, (int)Math.Ceiling(30 / (plotW / ((r.X1 - r.X0) / 25)))), yEvery = Math.Max(1, (int)Math.Ceiling(13 / (plotH / ((r.Y1 - r.Y0) / 100))));
+        for (int k = 0, mv = (int)r.X0; mv <= r.X1; mv += 25, k++)
         {
-            var a = VfPoint(mv, r.Y0, r); var b = VfPoint(mv, r.Y1, r);
-            OcVfCanvas.Children.Add(new Line { X1 = a.X, Y1 = a.Y, X2 = b.X, Y2 = b.Y, Stroke = faint });
-            Label($"{mv}", a.X - 12, a.Y + 3);
+            var a = Pt(mv, r.Y0); var b = Pt(mv, r.Y1);
+            canvas.Children.Add(new Line { X1 = a.X, Y1 = a.Y, X2 = b.X, Y2 = b.Y, Stroke = grid, StrokeThickness = 1 });
+            if (k % xEvery == 0) Label($"{mv}", a.X - 10, a.Y + 4);
         }
-        for (int mhz = (int)Math.Ceiling(r.Y0 / 250) * 250; mhz <= r.Y1; mhz += 250)
+        for (int k = 0, mhz = (int)r.Y0; mhz <= r.Y1; mhz += 100, k++)
         {
-            var a = VfPoint(r.X0, mhz, r); var b = VfPoint(r.X1, mhz, r);
-            OcVfCanvas.Children.Add(new Line { X1 = a.X, Y1 = a.Y, X2 = b.X, Y2 = b.Y, Stroke = faint });
-            Label($"{mhz}", 0, a.Y - 8);
+            var a = Pt(r.X0, mhz); var b = Pt(r.X1, mhz);
+            canvas.Children.Add(new Line { X1 = a.X, Y1 = a.Y, X2 = b.X, Y2 = b.Y, Stroke = grid, StrokeThickness = 1 });
+            if (k % yEvery == 0) Label($"{mhz}", 4, a.Y - 7);
         }
-        var stock = new Polyline { Stroke = (Brush)FindResource("LineStrong"), StrokeThickness = 2 };
-        var edit = new Polyline { Stroke = (Brush)FindResource("Accent"), StrokeThickness = 2 };
+        Label("Frequência, MHz", VfLeft - 30, 2);
+        var xTitle = new TextBlock { Text = "Tensão, mV", FontSize = 10, Foreground = muted };
+        xTitle.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        Canvas.SetLeft(xTitle, canvas.ActualWidth - VfRight - xTitle.DesiredSize.Width); Canvas.SetTop(xTitle, canvas.ActualHeight - 14);
+        canvas.Children.Add(xTitle);
+
+        // Fábrica: linha fina; a curva que vai para a placa: linha clara com um quadradinho por ponto, como no Afterburner.
+        var stock = new Polyline { Stroke = (Brush)FindResource("LineStrong"), StrokeThickness = 1 };
+        var edit = new Polyline { Stroke = curve, StrokeThickness = 1.5, Opacity = 0.8 };
         for (int i = 0; i < _vfStock.Count; i++)
         {
-            stock.Points.Add(VfPoint(_vfStock[i].Mv, _vfStock[i].Mhz, r));
-            edit.Points.Add(VfPoint(_vfStock[i].Mv, target[i], r));
+            stock.Points.Add(Pt(_vfStock[i].Mv, _vfStock[i].Mhz));
+            edit.Points.Add(Pt(_vfStock[i].Mv, target[i]));
         }
-        OcVfCanvas.Children.Add(stock);
-        OcVfCanvas.Children.Add(edit);
+        // Só dentro da área do gráfico: a parte plana de baixo e o que passa do topo não invadem as escalas.
+        stock.Clip = edit.Clip = new RectangleGeometry(new Rect(VfLeft, VfTop, plotW, plotH));
+        canvas.Children.Add(stock);
+        canvas.Children.Add(edit);
         for (int i = 1; i < _vfStock.Count; i++)
         {
-            var p = VfPoint(_vfStock[i].Mv, target[i], r);
-            bool edited = P.PointOffsetsMhz.ContainsKey(i);
-            var dot = new Ellipse { Width = edited ? 7 : 5, Height = edited ? 7 : 5, Fill = edited ? (Brush)FindResource("TempWarn") : (Brush)FindResource("Accent") };
-            Canvas.SetLeft(dot, p.X - dot.Width / 2); Canvas.SetTop(dot, p.Y - dot.Height / 2);
-            OcVfCanvas.Children.Add(dot);
+            if (_vfStock[i].Mv < r.X0 || target[i] < r.Y0) continue;
+            var p = Pt(_vfStock[i].Mv, target[i]);
+            bool edited = P.PointOffsetsMhz.ContainsKey(i), sel = _vfSel == i;
+            double size = sel ? 8 : 5;
+            var dot = new Rectangle { Width = size, Height = size, Fill = sel ? curve : edited ? (Brush)FindResource("TempWarn") : muted };
+            Canvas.SetLeft(dot, p.X - size / 2); Canvas.SetTop(dot, p.Y - size / 2);
+            canvas.Children.Add(dot);
         }
         if (P.UvCapMv is int cap)
         {
             int ci = VfCurveMath.NearestIndex(_vfStock, cap);
-            var a = VfPoint(_vfStock[ci].Mv, r.Y0, r); var b = VfPoint(_vfStock[ci].Mv, r.Y1, r);
-            OcVfCanvas.Children.Add(new Line { X1 = a.X, Y1 = a.Y, X2 = b.X, Y2 = b.Y, Stroke = (Brush)FindResource("TempWarn"), StrokeDashArray = new DoubleCollection { 4, 3 } });
-            var c = VfPoint(_vfStock[ci].Mv, target[ci], r);
-            var ring = new Ellipse { Width = 14, Height = 14, Stroke = (Brush)FindResource("TempWarn"), StrokeThickness = 2 };
-            Canvas.SetLeft(ring, c.X - 7); Canvas.SetTop(ring, c.Y - 7);
-            OcVfCanvas.Children.Add(ring);
+            var a = Pt(_vfStock[ci].Mv, r.Y0); var b = Pt(_vfStock[ci].Mv, r.Y1);
+            canvas.Children.Add(new Line { X1 = a.X, Y1 = a.Y, X2 = b.X, Y2 = b.Y, Stroke = (Brush)FindResource("TempWarn"), StrokeDashArray = new DoubleCollection { 4, 3 } });
+            var c = Pt(_vfStock[ci].Mv, target[ci]);
             var tag = new TextBlock { Text = $"{_vfStock[ci].Mv} mV · {target[ci]} MHz", FontSize = 12, FontWeight = FontWeights.SemiBold, Foreground = (Brush)FindResource("TempWarn") };
-            Canvas.SetLeft(tag, Math.Max(0, c.X - 150)); Canvas.SetTop(tag, Math.Max(0, c.Y - 26));
-            OcVfCanvas.Children.Add(tag);
+            Canvas.SetLeft(tag, Math.Max(VfLeft, c.X - 150)); Canvas.SetTop(tag, Math.Max(VfTop, c.Y - 26));
+            canvas.Children.Add(tag);
         }
-        if (_vfSel is int sel && sel < _vfStock.Count)
+        if (_vfSel is int s && s < _vfStock.Count && s != CapIndex)
         {
-            var c = VfPoint(_vfStock[sel].Mv, target[sel], r);
-            var ring = new Ellipse { Width = 12, Height = 12, Stroke = (Brush)FindResource("Fg"), StrokeThickness = 1.5 };
-            Canvas.SetLeft(ring, c.X - 6); Canvas.SetTop(ring, c.Y - 6);
-            OcVfCanvas.Children.Add(ring);
+            var c = Pt(_vfStock[s].Mv, target[s]);
+            var tag = new TextBlock { Text = $"{_vfStock[s].Mv} mV · {target[s]} MHz", FontSize = 11, Foreground = curve };
+            Canvas.SetLeft(tag, Math.Max(VfLeft, c.X - 120)); Canvas.SetTop(tag, Math.Max(VfTop, c.Y - 22));
+            canvas.Children.Add(tag);
         }
         if (_ocSamples.LastOrDefault() is { CoreMv: int lmv, CoreMhz: uint lmhz } && lmv >= r.X0 && lmv <= r.X1)
         {
-            var p = VfPoint(lmv, lmhz, r);
+            var p = Pt(lmv, lmhz);
             var now = new Ellipse { Width = 10, Height = 10, Stroke = (Brush)FindResource("ChartGpu"), StrokeThickness = 2 };
             Canvas.SetLeft(now, p.X - 5); Canvas.SetTop(now, p.Y - 5);
-            OcVfCanvas.Children.Add(now);
+            canvas.Children.Add(now);
         }
 
-        int capIdx = P.UvCapMv is int cm ? VfCurveMath.NearestIndex(_vfStock, cm) : -1;
-        OcVfInfo.Text = (capIdx >= 0 ? $"Undervolt: teto em {_vfStock[capIdx].Mv} mV a {target[capIdx]} MHz (fábrica nessa tensão: {_vfStock[capIdx].Mhz} MHz)." : "Sem teto de undervolt.")
+        int capIdx = CapIndex;
+        string info = (capIdx >= 0 ? $"Undervolt: teto em {_vfStock[capIdx].Mv} mV a {target[capIdx]} MHz (fábrica nessa tensão: {_vfStock[capIdx].Mhz} MHz)." : "Sem teto de undervolt.")
             + $" Pico: {target.Max()} MHz (fábrica {_vfStock.Max(p => p.Mhz)} MHz). Core {P.CoreOffsetMhz:+0;-0;0} MHz"
             + (P.PointOffsetsMhz.Count > 0 ? $", {P.PointOffsetsMhz.Count} ponto(s) editado(s)." : ".") + " Círculo verde = ponto em uso agora. Clique em APLICAR para gravar.";
+        OcVfInfo.Text = info;
+        if (_vfWindowInfo != null) _vfWindowInfo.Text = info;
 
         void Label(string text, double x, double y)
         {
             var t = new TextBlock { Text = text, FontSize = 10, Foreground = muted };
             Canvas.SetLeft(t, x); Canvas.SetTop(t, y);
-            OcVfCanvas.Children.Add(t);
+            canvas.Children.Add(t);
         }
     }
 
-    private int? NearestVfPoint(Point at)
+    private int? NearestVfPoint(Canvas c, Point at)
     {
         if (_vfStock == null) return null;
         int[] target = VfCurveMath.TargetMhz(_vfStock, P);
@@ -510,7 +549,8 @@ public partial class MainWindow
         int? best = null; double bestD = 14;
         for (int i = 1; i < _vfStock.Count; i++)
         {
-            var p = VfPoint(_vfStock[i].Mv, target[i], r);
+            if (_vfStock[i].Mv < r.X0) continue;
+            var p = VfPoint(c, _vfStock[i].Mv, target[i], r);
             double d = Math.Abs(p.X - at.X) + Math.Abs(p.Y - at.Y) * 0.3;
             if (d < bestD) { bestD = d; best = i; }
         }
@@ -518,23 +558,69 @@ public partial class MainWindow
     }
 
     private int? _vfSel;
+    private double? _vfDownY;
+    private Window? _vfWindow;
+    private TextBlock? _vfWindowInfo;
 
     private int CapIndex => P.UvCapMv is int cap && _vfStock != null ? VfCurveMath.NearestIndex(_vfStock, cap) : -1;
 
+    /// <summary>Liga mouse e teclado do editor a um canvas (o da aba e o da janela Ctrl+F usam os mesmos gestos).</summary>
+    private void HookVfCanvas(Canvas c)
+    {
+        c.SizeChanged += (_, _) => DrawVf();
+        c.MouseLeftButtonDown += OcVf_Down;
+        c.MouseMove += OcVf_Move;
+        c.MouseLeftButtonUp += (_, _) => { _ocDrag = null; c.ReleaseMouseCapture(); _settings.Save(); };
+        c.MouseRightButtonDown += OcVf_Right;
+        c.Focusable = true;
+        c.KeyDown += OcVf_Key;
+    }
+
+    /// <summary>Ctrl+F: abre (ou fecha) o editor de curva numa janela própria, como o do Afterburner.</summary>
+    private void ToggleVfWindow()
+    {
+        if (_vfWindow != null) { _vfWindow.Close(); return; }
+        if (_oc?.CurveSupported != true) { OcVfInfo.Text = "Editor de curva indisponível nesta placa ou driver."; return; }
+        var canvas = new Canvas { ClipToBounds = true, Background = Brushes.Transparent, Margin = new Thickness(8, 6, 8, 4) };
+        _vfWindowInfo = new TextBlock { Foreground = (Brush)FindResource("Muted"), FontSize = 11, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(12, 0, 12, 10) };
+        var root = new Grid();
+        root.RowDefinitions.Add(new RowDefinition());
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        root.Children.Add(canvas);
+        Grid.SetRow(_vfWindowInfo, 1);
+        root.Children.Add(_vfWindowInfo);
+        _vfWindow = new Window
+        {
+            Title = "Editor da Curva Tensão/Frequência", Owner = this, Width = 900, Height = 620, MinWidth = 480, MinHeight = 320,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner, Background = (Brush)FindResource("Bg"), ShowInTaskbar = false, Content = root,
+        };
+        HookVfCanvas(canvas);
+        _vfWindow.PreviewKeyDown += (_, e) => { if (e.Key == Key.F && Keyboard.Modifiers == ModifierKeys.Control) { _vfWindow?.Close(); e.Handled = true; } };
+        _vfWindow.Closed += (_, _) => { _vfWindow = null; _vfWindowInfo = null; _settings.Save(); };
+        _vfWindow.Show();
+        canvas.Focus();
+    }
+
+    private void BtnOcCurveEditor_Click(object sender, RoutedEventArgs e) => ToggleVfWindow();
+
     private void OcVf_Down(object sender, MouseButtonEventArgs e)
     {
-        _ocDrag = NearestVfPoint(e.GetPosition(OcVfCanvas));
-        if (_ocDrag != null) { _vfSel = _ocDrag; OcVfCanvas.CaptureMouse(); }
-        OcVfCanvas.Focus();
+        var c = (Canvas)sender;
+        _ocDrag = NearestVfPoint(c, e.GetPosition(c));
+        _vfDownY = e.GetPosition(c).Y;
+        if (_ocDrag != null) { _vfSel = _ocDrag; c.CaptureMouse(); }
+        c.Focus();
         DrawVf();
     }
 
     private void OcVf_Move(object sender, MouseEventArgs e)
     {
+        var c = (Canvas)sender;
         if (_ocDrag is not int i || _vfStock == null || e.LeftButton != MouseButtonState.Pressed) return;
-        var r = VfRange(VfCurveMath.TargetMhz(_vfStock, P));
-        double h = OcVfCanvas.ActualHeight;
-        int mhz = (int)(Math.Round((r.Y0 + ((h - 22) - e.GetPosition(OcVfCanvas).Y) / (h - 30) * (r.Y1 - r.Y0)) / 5) * 5);
+        // Um clique só seleciona o ponto; ele muda quando o mouse anda de verdade (como no Afterburner).
+        if (_vfDownY is double y0 && Math.Abs(e.GetPosition(c).Y - y0) < 3) return;
+        _vfDownY = null;
+        int mhz = VfMhzAt(c, e.GetPosition(c).Y, VfRange(VfCurveMath.TargetMhz(_vfStock, P)));
         if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
         {
             int extra = P.PointOffsetsMhz.TryGetValue(i, out int o) ? o : 0;
@@ -582,13 +668,23 @@ public partial class MainWindow
 
     private void OcVf_Right(object sender, MouseButtonEventArgs e)
     {
-        if (NearestVfPoint(e.GetPosition(OcVfCanvas)) is not int i) return;
+        var c = (Canvas)sender;
+        if (NearestVfPoint(c, e.GetPosition(c)) is not int i) return;
         _vfSel = i;
         LockVfAt(i);
     }
 
     private void OcVf_Key(object sender, KeyEventArgs e)
     {
+        // Ctrl+D volta a curva ao padrão de fábrica (sem offset, pontos editados nem teto), como no Afterburner.
+        if (e.Key == Key.D && Keyboard.Modifiers == ModifierKeys.Control)
+        {
+            P.PointOffsetsMhz.Clear(); P.UvCapMv = null; P.UvCapMhz = null; OcUvMhz.Text = "";
+            if (_ocSliders.TryGetValue("core", out var core)) core.Slider.Value = 0; else P.CoreOffsetMhz = 0;
+            _settings.Save(); DrawVf();
+            e.Handled = true;
+            return;
+        }
         if (_vfSel is not int i || _vfStock == null) return;
         int[] target = VfCurveMath.TargetMhz(_vfStock, P);
         int step = Keyboard.Modifiers.HasFlag(ModifierKeys.Control) ? 25 : 5;

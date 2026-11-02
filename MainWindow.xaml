@@ -2616,6 +2616,8 @@
                                     <StackPanel x:Name="OcProfilesPanel" Orientation="Horizontal" Margin="0,0,10,8"/>
                                     <Button x:Name="BtnOcSave" Style="{StaticResource OutlineButton}" Content="SALVAR"
                                             Padding="16,9" Margin="0,0,10,8" Click="BtnOcSave_Click"/>
+                                    <Button Style="{StaticResource OutlineButton}" Content="CURVE EDITOR" ToolTip="Editor da curva tensão/frequência em janela própria (Ctrl+F)"
+                                            Padding="16,9" Margin="0,0,10,8" Click="BtnOcCurveEditor_Click"/>
                                 </WrapPanel>
                                 <CheckBox x:Name="OcApplyOnStart" Content="Reaplicar os últimos ajustes aplicados sempre que o PcismoMaster abrir"
                                           Margin="0,2,0,8" Checked="OcApplyOnStart_Changed" Unchecked="OcApplyOnStart_Changed"/>
@@ -2644,7 +2646,8 @@
                                     depois clique no ponto da tensão desejada e aperte L (ou clique com o botão direito) para travar ali —
                                     a curva fica plana a partir dele e a placa não passa dessa tensão. Arraste o ponto travado (ou use ↑/↓,
                                     Ctrl = passos de 25 MHz) para escolher o clock do teto; ←/→ trocam de ponto; L de novo destrava.
-                                    Arrastar outro ponto muda só ele. Cinza = fábrica, azul = como vai ficar.
+                                    Arrastar outro ponto muda só ele. Ctrl+D volta a curva ao padrão; Ctrl+F abre o editor em janela própria.
+                                    Linha fina = fábrica, quadradinhos = como vai ficar.
                                 </TextBlock>
                                 <Border Height="320" Background="{DynamicResource Bg}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="10">
                                     <Canvas x:Name="OcVfCanvas" ClipToBounds="True" Background="Transparent" Margin="6"/>
