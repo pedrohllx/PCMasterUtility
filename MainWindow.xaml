@@ -2615,7 +2615,8 @@
                                     <TextBlock Text="PERFIS" Style="{StaticResource Label}" VerticalAlignment="Center" Margin="0,0,10,8"/>
                                     <StackPanel x:Name="OcProfilesPanel" Orientation="Horizontal" Margin="0,0,10,8"/>
                                     <Button x:Name="BtnOcSave" Style="{StaticResource OutlineButton}" Content="SALVAR"
-                                            Padding="16,9" Margin="0,0,10,8" Click="BtnOcSave_Click"/>                                </WrapPanel>
+                                            Padding="16,9" Margin="0,0,10,8" Click="BtnOcSave_Click"/>
+                                </WrapPanel>
                                 <CheckBox x:Name="OcApplyOnStart" Content="Reaplicar os últimos ajustes aplicados sempre que o PcismoMaster abrir"
                                           Margin="0,2,0,8" Checked="OcApplyOnStart_Changed" Unchecked="OcApplyOnStart_Changed"/>
                                 <TextBlock x:Name="OcGpuResult" TextWrapping="Wrap"/>
