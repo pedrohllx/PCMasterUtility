@@ -63,8 +63,16 @@ Test("V/F: undervolt flattens the curve at the cap and nothing passes it", () =>
 Test("V/F: deltas never pass the driver's ±1000 MHz limit", () => {
     var t = VfCurveMath.TargetMhz(stockCurve, new OcProfile { CoreOffsetMhz = 900, PointOffsetsMhz = { [2] = 900 } });
     Assert(t.Select((x, i) => Math.Abs(x - stockCurve[i].Mhz)).Max() <= 1000);
-    var uv = VfCurveMath.TargetMhz(stockCurve, new OcProfile { UvCapMv = 700, UvCapMhz = 300 });
-    Assert(uv.Select((x, i) => stockCurve[i].Mhz - x).Max() <= 1000);
+    var uv = VfCurveMath.DeltasKhz(stockCurve, new OcProfile { UvCapMv = 700, UvCapMhz = 300 });
+    Assert(uv.Min() >= -VfCurveMath.MaxBelowCapMhz * 1000);
+});
+Test("V/F: after the cap every point gets one offset that keeps it under the cap (like Afterburner)", () => {
+    var p = new OcProfile { CoreOffsetMhz = 481, UvCapMv = 900, UvCapMhz = 2895 };
+    int cap = VfCurveMath.NearestIndex(stockCurve, 900);
+    var d = VfCurveMath.DeltasKhz(stockCurve, p);
+    Assert(d.Skip(1).Take(cap - 1).All(x => x == 481_000));
+    Assert(d.Skip(cap + 1).Distinct().Count() == 1);
+    Assert(Enumerable.Range(cap + 1, stockCurve.Count - cap - 1).All(i => stockCurve[i].Mhz + d[i] / 1000 < 2895));
 });
 Test("V/F: stock recovery and readability check", () => {
     var live = stockCurve.Select(c => (c.Mv, c.Mhz + 45)).ToList();

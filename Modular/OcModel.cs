@@ -60,20 +60,40 @@ public static class VfCurveMath
                 target[i] = i >= cap ? capMhz : Math.Min(target[i], capMhz);
         }
 
-        // Cada ponto fica dentro de ±1000 MHz do original (limite do driver).
+        // Cada ponto fica dentro de ±1000 MHz do original. Depois do teto não: lá a placa deixa a curva plana sozinha (DeltasKhz).
+        int capIdx = CapIndex(stock, p);
         for (int i = 0; i < target.Length; i++)
-            target[i] = stock[i].Mhz + Clamp(target[i] - stock[i].Mhz);
+            if (capIdx < 0 || i <= capIdx) target[i] = stock[i].Mhz + Clamp(target[i] - stock[i].Mhz);
         return target;
     }
 
-    /// <summary>Deltas em kHz por ponto, alinhados com a curva (o que o driver grava).</summary>
+    /// <summary>Deltas em kHz por ponto, alinhados com a curva (o que o driver grava). Como o MSI Afterburner, todos os
+    /// pontos depois do teto recebem o mesmo offset bem negativo: eles ficam abaixo do teto e o driver, que não deixa
+    /// a curva descer, os segura no clock do teto. Assim a curva fica plana até o fim e a placa não sobe a tensão.</summary>
     public static int[] DeltasKhz(IReadOnlyList<(int Mv, int Mhz)> stock, OcProfile p)
     {
         int[] target = TargetMhz(stock, p);
         var deltas = new int[stock.Count];
-        for (int i = 1; i < stock.Count; i++) deltas[i] = (target[i] - stock[i].Mhz) * 1000;
+        int capIdx = CapIndex(stock, p);
+        int end = capIdx < 0 ? stock.Count : capIdx + 1;
+        for (int i = 1; i < end; i++) deltas[i] = (target[i] - stock[i].Mhz) * 1000;
+        if (capIdx >= 0 && end < stock.Count)
+        {
+            int below = Enumerable.Range(end, stock.Count - end).Min(i => target[capIdx] - stock[i].Mhz) - BelowCapMarginMhz;
+            int flat = Math.Max(below, -MaxBelowCapMhz) * 1000;
+            for (int i = end; i < stock.Count; i++) deltas[i] = flat;
+        }
         return deltas;
     }
+
+    /// <summary>Folga para os pontos depois do teto ficarem com certeza abaixo dele.</summary>
+    public const int BelowCapMarginMhz = 200;
+
+    /// <summary>O offset mais negativo usado depois do teto (o Afterburner grava cerca de −2017 MHz ali).</summary>
+    public const int MaxBelowCapMhz = 2000;
+
+    private static int CapIndex(IReadOnlyList<(int Mv, int Mhz)> stock, OcProfile p)
+        => p.UvCapMv is int mv && stock.Count > 0 ? NearestIndex(stock, mv) : -1;
 
     /// <summary>Índice do ponto com a tensão mais próxima.</summary>
     public static int NearestIndex(IReadOnlyList<(int Mv, int Mhz)> curve, int mv)

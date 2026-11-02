@@ -198,7 +198,9 @@ public sealed class GpuOc
             }
             if (EffectiveMemOffsetMhz() is int got && Math.Abs(got - mem) > 1)
                 report[memLine] = $"Memory Clock: o driver aceitou {mem:+0;-0;0} MHz, mas o clock efetivo ficou em {got:+0;-0;0} MHz.";
-            else if (p.CoreOffsetMhz != 0)
+            // Com curva V/F o offset do core já está nos pontos (como o "Curve" do Afterburner). Gravá-lo também na P0
+            // somaria duas vezes e subiria a parte plana depois do teto, desfazendo o undervolt.
+            else if (p.CoreOffsetMhz != 0 && !CurveSupported)
             {
                 Step(report, "Core Clock", () => NvApi.SetPstate0Offsets(NvApiGpu, p.CoreOffsetMhz * 1000, p.MemOffsetMhz * 1000, 0), $"{p.CoreOffsetMhz:+0;-0;0} MHz");
             }
