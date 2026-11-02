@@ -824,6 +824,54 @@
                         </Grid>
                         <TextBlock x:Name="DrvStatus" Text="Clique em VERIFICAR TUDO." Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,0,0,16"/>
 
+                        <!-- Limpeza completa do driver de vídeo com o DDU (Ultimate · 5 Graphics · 1 Driver Clean) -->
+                        <Border Style="{StaticResource CardBorder}" Margin="0,0,0,14">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <Border Width="34" Height="34" CornerRadius="9" Background="{DynamicResource AccentGradient}" Margin="0,0,12,0">
+                                        <TextBlock Text="&#xE74D;" FontFamily="{StaticResource Icons}" FontSize="16" Foreground="{DynamicResource OnAccent}"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="Limpeza completa do driver de vídeo (DDU)" FontSize="15" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Remove o driver de vídeo por inteiro no modo de segurança, para reinstalar do zero" Foreground="{DynamicResource Muted}" FontSize="12"/>
+                                    </StackPanel>
+                                </StackPanel>
+                                <TextBlock Foreground="{DynamicResource Faint}" FontSize="11.5" TextWrapping="Wrap" Margin="0,0,0,12">
+                                    Use quando o driver der problema (tela preta, travamentos, erro na instalação) ou ao trocar de placa. O PC reinicia no modo de
+                                    segurança, o Display Driver Uninstaller (Wagnardsoft) remove driver, painel, PhysX, GeForce Experience e Vulkan, e o PC volta
+                                    ao normal sem driver de vídeo: depois é só instalar o driver de novo.
+                                </TextBlock>
+                                <WrapPanel Margin="0,0,0,6">
+                                    <TextBlock Text="MODO" Style="{StaticResource Label}" VerticalAlignment="Center" Margin="0,0,10,6"/>
+                                    <RadioButton x:Name="DduAuto" Style="{StaticResource Chip}" GroupName="DduMode" Content="Automático (limpa e reinicia sozinho)" IsChecked="True"/>
+                                    <RadioButton Style="{StaticResource Chip}" GroupName="DduMode" Content="Manual (abre o DDU no modo de segurança)"/>
+                                </WrapPanel>
+                                <WrapPanel x:Name="DduGpuPanel" Margin="0,0,0,8">
+                                    <TextBlock Text="LIMPAR" Style="{StaticResource Label}" VerticalAlignment="Center" Margin="0,0,10,6"/>
+                                    <RadioButton Style="{StaticResource Chip}" GroupName="DduGpu" Content="NVIDIA" Tag="nvidia"/>
+                                    <RadioButton Style="{StaticResource Chip}" GroupName="DduGpu" Content="AMD" Tag="amd"/>
+                                    <RadioButton Style="{StaticResource Chip}" GroupName="DduGpu" Content="Intel" Tag="intel"/>
+                                    <RadioButton Style="{StaticResource Chip}" GroupName="DduGpu" Content="Todas as placas" Tag="all"/>
+                                </WrapPanel>
+                                <CheckBox x:Name="DduPreDownload" Content="Baixar antes o driver NVIDIA mais recente (para reinstalar logo depois, mesmo sem internet)" IsChecked="True" Margin="0,0,0,8"/>
+                                <CheckBox x:Name="DduBlockWu" Content="Impedir o Windows Update de instalar um driver de vídeo sozinho (dá para desfazer)" IsChecked="True" Margin="0,0,0,8"/>
+                                <CheckBox x:Name="DduAudio" Content="Também remover drivers de áudio Realtek e Sound Blaster (o PC fica sem som até reinstalar)" Margin="0,0,0,12"/>
+                                <WrapPanel>
+                                    <Button x:Name="BtnDduRun" Style="{StaticResource PrimaryButton}" Content="Preparar e reiniciar no modo de segurança" Padding="18,9" Margin="0,0,10,8" Click="BtnDduRun_Click"/>
+                                    <Button x:Name="BtnDduCancel" Style="{StaticResource OutlineButton}" Content="Cancelar reinício" Padding="16,9" Margin="0,0,10,8" Visibility="Collapsed" Click="BtnDduCancel_Click"/>
+                                    <Button x:Name="BtnDduLocal" Style="{StaticResource OutlineButton}" Content="Usar um DDU que eu baixei…" Padding="14,9" Margin="0,0,10,8" Click="BtnDduLocal_Click"
+                                            ToolTip="Escolha o instalador oficial do DDU baixado do site da Wagnardsoft"/>
+                                    <Button x:Name="BtnDduWuRestore" Style="{StaticResource OutlineButton}" Content="Liberar drivers pelo Windows Update" Padding="14,9" Margin="0,0,10,8"
+                                            Visibility="Collapsed" Click="BtnDduWuRestore_Click"/>
+                                    <Button x:Name="BtnDduInstall" Style="{StaticResource OutlineButton}" Content="Instalar o driver baixado antes da limpeza" Padding="14,9" Margin="0,0,10,8"
+                                            Visibility="Collapsed" Click="BtnDduInstall_Click"/>
+                                </WrapPanel>
+                                <TextBlock x:Name="DduStatus" Foreground="{DynamicResource Accent}" TextWrapping="Wrap"/>
+                                <TextBlock x:Name="DduLog" Foreground="{DynamicResource Muted}" FontSize="11.5" TextWrapping="Wrap" FontFamily="{StaticResource Mono}" Margin="0,6,0,0"/>
+                            </StackPanel>
+                        </Border>
+
                         <Border Style="{StaticResource CardBorder}" Margin="0,0,0,14">
                             <StackPanel>
                                 <TextBlock Text="PLACA DE VÍDEO" Style="{StaticResource Label}"/>

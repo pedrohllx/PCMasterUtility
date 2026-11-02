@@ -92,6 +92,11 @@ public sealed class AppSettings
     // Jogos: biblioteca em lista (true) ou em cartões com capa (false)
     public bool LibListView { get; set; }
 
+    // Limpeza com o DDU: valor do Windows Update antes de bloquear (para desfazer) e o driver baixado antes da limpeza
+    public bool DduWuBlocked { get; set; }
+    public int? DduWuBackup { get; set; }
+    public string? DduDriverFile { get; set; }
+
     // Manutenção: quando foi a última revisão semanal concluída sem erros
     public DateTime? MaintWeeklyLast { get; set; }
     /// <summary>Curva V/F de fábrica (mV, MHz) lida sem offsets; serve de referência quando o app abre com overclock já aplicado.</summary>

@@ -4,6 +4,12 @@ A numeração segue **SemVer** (`MAJOR.MINOR.PATCH`). Regras e processo em [docs
 
 ## Em desenvolvimento
 
+- **Drivers · Limpeza completa do driver de vídeo (DDU)** (versão do PcismoMaster do "5 Graphics/1 Driver Clean" do Ultimate):
+  - Modos **Automático** (o DDU limpa sozinho no modo de segurança e o PC reinicia normal) e **Manual** (abre o DDU no modo de segurança); escolha da placa (NVIDIA, AMD, Intel ou todas).
+  - Baixa o instalador oficial do DDU e **confere a assinatura da Wagnardsoft**; extrai sem precisar do 7-Zip (o script original falhava sem ele). Também aceita um DDU baixado por você.
+  - Opcional e recomendado: **baixar antes o driver NVIDIA mais recente**; depois da limpeza aparece o botão para instalá-lo, mesmo sem internet.
+  - Ponto de restauração, **tudo preparado e conferido antes de mexer no boot**, atalho de emergência "Sair do modo de segurança" na Área de Trabalho e reinício com **contagem regressiva e Cancelar** (desfaz o modo de segurança).
+  - Bloqueio do driver automático do Windows Update **com botão para desfazer** (o script deixava permanente). Remover áudio Realtek/Sound Blaster virou opção, **desligada por padrão**.
 - **FERRAMENTAS · Drivers ganhou sub-abas**: **Drivers** (o que já existia, sem mudanças) e o novo **Profile Inspector**.
 - **Profile Inspector** (no estilo do NVIDIA Profile Inspector): lê e grava os perfis do driver NVIDIA (DRS da NVAPI), o mesmo banco do Painel de Controle NVIDIA, inclusive o que o painel esconde.
   - Lista de todos os perfis do driver (perfil global + milhares de jogos), com busca.

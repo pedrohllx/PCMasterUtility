@@ -289,6 +289,18 @@ public static class DriverManager
     /// <summary>Baixa o instalador, confere a assinatura da NVIDIA e abre o instalador oficial.</summary>
     public static async Task<string> DownloadAndLaunchAsync(GpuDriverStatus g, Action<string, double> progress, CancellationToken ct)
     {
+        string file = await DownloadAsync(g, progress, ct);
+
+        progress("Criando ponto de restauração (se o Windows permitir)…", 1);
+        string restore = await TryRestorePointAsync();
+
+        Process.Start(new ProcessStartInfo(file) { UseShellExecute = true, WorkingDirectory = DownloadFolder });
+        return $"Instalador {g.Latest} aberto (assinatura {g.Vendor} válida). {restore} Siga o instalador; a tela pode piscar durante a instalação.";
+    }
+
+    /// <summary>Só baixa o instalador e confere a assinatura do fabricante (usado também antes da limpeza com o DDU).</summary>
+    public static async Task<string> DownloadAsync(GpuDriverStatus g, Action<string, double> progress, CancellationToken ct)
+    {
         Directory.CreateDirectory(DownloadFolder);
         string file = Path.Combine(DownloadFolder, Path.GetFileName(new Uri(g.DownloadUrl).AbsolutePath));
         progress("Baixando o driver…", 0);
@@ -314,15 +326,11 @@ public static class DriverManager
 
         progress("Conferindo a assinatura digital…", 1);
         VerifyPublisher(file, g.Vendor == "AMD" ? "Advanced Micro Devices" : "NVIDIA");
-
-        progress("Criando ponto de restauração (se o Windows permitir)…", 1);
-        string restore = await TryRestorePointAsync();
-
-        Process.Start(new ProcessStartInfo(file) { UseShellExecute = true, WorkingDirectory = DownloadFolder });
-        return $"Instalador {g.Latest} aberto (assinatura {g.Vendor} válida). {restore} Siga o instalador; a tela pode piscar durante a instalação.";
+        return file;
     }
 
-    private static void VerifyPublisher(string path, string publisher)
+    /// <summary>Confere a assinatura Authenticode e o nome de quem assinou; apaga o arquivo e falha se não bater.</summary>
+    internal static void VerifyPublisher(string path, string publisher)
     {
         int trust = CorsairSdkInstaller.WinVerifyTrustFile(path);
         if (trust != 0)
