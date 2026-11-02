@@ -55,7 +55,7 @@ public partial class MainWindow
             if (vendor == "nvidia")
             {
                 GfxRow(DrsNip, "Perfil global recomendado (Profile Inspector)", false,
-                    "Low Latency Ultra, VSync forçado desligado, " + (card?.Laptop == true ? "" : "energia em desempenho máximo, ") + "filtragem em alto desempenho, cache de shader ilimitado, " +
+                    "Modo de latência baixa Ligado, VSync forçado desligado, GPU OpenGL em seleção automática, " + (card?.Laptop == true ? "" : "energia em desempenho máximo, ") + "filtragem em alto desempenho, cache de shader ilimitado, " +
                     "otimização em threads e mais (o .nip do script" + (notes.Count > 0 ? ", ajustado à sua placa" : "") + "). Antes, o valor atual de cada um é guardado.", GraphicsTweaks.DrsApplied(DrsNip), firstTime || stale.Contains(DrsNip));
                 GfxRow(DrsGsync, "Desligar o G-SYNC", true,
                     "Desliga o G-SYNC em todos os jogos (parte do script). Deixe desligado se você usa monitor G-SYNC/FreeSync.", GraphicsTweaks.DrsApplied(DrsGsync), stale.Contains(DrsGsync));

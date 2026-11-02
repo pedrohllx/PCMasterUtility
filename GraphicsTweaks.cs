@@ -200,7 +200,7 @@ public static class GraphicsTweaks
     public static readonly (uint Id, uint Value, string Name)[] NipSettings =
     {
         (277041154, 0, "Frame Rate Limiter V3"), (8102046, 1, "Maximum Pre-Rendered Frames"), (6600001, 1, "Preferred Refresh Rate"),
-        (390467, 2, "Ultra Low Latency - CPL State"), (277041152, 1, "Ultra Low Latency - Enabled"), (11041231, 138504007, "Vertical Sync"),
+        (390467, 1, "Ultra Low Latency - CPL State"), (277041152, 0, "Ultra Low Latency - Enabled"), (11041231, 138504007, "Vertical Sync"),
         (270198627, 0, "Vertical Sync - Smooth AFR Behavior"), (5912412, 2525368439, "Vertical Sync - Tear Control"),
         (550932728, 0, "Vulkan/OpenGL Present Method"), (276652957, 0, "Antialiasing - Gamma Correction"), (276757595, 1, "Antialiasing - Mode"),
         (282555346, 0, "Antialiasing - Setting"), (8703344, 1, "Anisotropic Filter - Optimization"), (15151633, 1, "Anisotropic Filter - Sample Optimization"),
@@ -220,7 +220,10 @@ public static class GraphicsTweaks
         (278196727, 0, "GSYNC - Global Mode"), (268604728, 0, "GSYNC - Indicator Overlay"),
     };
 
-    private sealed record DrsBackup(uint Id, bool WasUser, ulong Value);
+    private sealed record DrsBackup(uint Id, bool WasUser, ulong Value, string? Text = null);
+
+    /// <summary>"GPU com renderização OpenGL": o perfil recomendado tira a placa fixa (o script fixava a 4090 dele) e deixa em Seleção automática.</summary>
+    public const uint OpenGlGpu = 0x20D0F3E6;
     private static string DrsBackupFile(string id) => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PcismoMaster", "ModuleBackups", id + ".drs.json");
 
     public static bool DrsApplied(string id) => File.Exists(DrsBackupFile(id));
@@ -234,9 +237,17 @@ public static class GraphicsTweaks
             IntPtr p = NvDrs.BaseProfile(s);
             var backup = settings.Select(x => NvDrs.Get(s, p, x.Id) is { Location: DrsLocation.Current, IsPredefined: false } v
                 ? new DrsBackup(x.Id, true, v.Number) : new DrsBackup(x.Id, false, 0)).ToList();
+            // Perfil recomendado: placa OpenGL em Seleção automática (guarda a fixada, se houver, para o Desfazer).
+            bool resetGl = false;
+            if (id == "gfx-nv-drs" && NvDrs.Get(s, p, OpenGlGpu) is { Location: DrsLocation.Current, IsPredefined: false, Text: not null } gl)
+            {
+                backup.Add(new DrsBackup(OpenGlGpu, true, 0, gl.Text));
+                resetGl = true;
+            }
             Directory.CreateDirectory(Path.GetDirectoryName(DrsBackupFile(id))!);
             File.WriteAllText(DrsBackupFile(id), JsonSerializer.Serialize(backup));
             foreach (var x in settings) NvDrs.Set(s, p, x.Id, DrsType.Dword, x.Value, null);
+            if (resetGl) NvDrs.Delete(s, p, OpenGlGpu);
             return 0;
         }, save: true);
     }
@@ -249,7 +260,9 @@ public static class GraphicsTweaks
         {
             IntPtr p = NvDrs.BaseProfile(s);
             foreach (var b in backup)
-                if (b.WasUser) NvDrs.Set(s, p, b.Id, DrsType.Dword, b.Value, null); else NvDrs.Delete(s, p, b.Id);
+                if (b.WasUser && b.Text != null) NvDrs.Set(s, p, b.Id, DrsType.WString, 0, b.Text);
+                else if (b.WasUser) NvDrs.Set(s, p, b.Id, DrsType.Dword, b.Value, null);
+                else NvDrs.Delete(s, p, b.Id);
             return 0;
         }, save: true);
         File.Delete(DrsBackupFile(id));
