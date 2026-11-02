@@ -126,16 +126,20 @@ public partial class MainWindow
         => string.Concat(name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(s => char.ToUpperInvariant(s[0])));
 
     /// <summary>"Preparar e jogar" e "Ajustes" (mesmos nos cartões e na lista).</summary>
-    private StackPanel GameButtons(LibGame g)
+    /// <param name="fill">Cartão: os dois botões dividem a largura do cartão (nunca passam da borda).</param>
+    private Grid GameButtons(LibGame g, bool fill = false)
     {
         var play = new Button { Content = _playingKey == g.Key ? "Parar" : "Preparar e jogar", Style = (Style)FindResource("PrimaryButton"),
-            Padding = new Thickness(10, 6, 10, 6), FontSize = 11.5, Margin = new Thickness(0, 0, 6, 0) };
+            Padding = new Thickness(8, 6, 8, 6), FontSize = 11.5, Margin = new Thickness(0, 0, 6, 0) };
         play.Click += (_, _) => PlayGame(g, play);
         if (_playingKey == g.Key) _playingButton = play;
-        var settings = new Button { Content = "Ajustes", Style = (Style)FindResource("OutlineButton"), Padding = new Thickness(12, 6, 12, 6), FontSize = 11.5 };
+        var settings = new Button { Content = "Ajustes", Style = (Style)FindResource("OutlineButton"), Padding = new Thickness(10, 6, 10, 6), FontSize = 11.5 };
         settings.Click += (_, _) => OpenGameSettings(g);
-        var buttons = new StackPanel { Orientation = Orientation.Horizontal };
+        var buttons = new Grid();
+        buttons.ColumnDefinitions.Add(new ColumnDefinition { Width = fill ? new GridLength(1, GridUnitType.Star) : GridLength.Auto });
+        buttons.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         buttons.Children.Add(play);
+        Grid.SetColumn(settings, 1);
         buttons.Children.Add(settings);
         return buttons;
     }
@@ -163,7 +167,7 @@ public partial class MainWindow
     /// <summary>Cartão do jogo: capa, nome, loja e os botões "Preparar e jogar" e "Ajustes".</summary>
     private FrameworkElement GameCard(LibGame g)
     {
-        const double w = 170, coverH = 240;
+        const double w = 184, coverH = 260;
         var cover = new Border { Height = coverH, CornerRadius = new CornerRadius(10, 10, 0, 0), Background = (Brush)FindResource("AccentGradient") };
         var initials = new TextBlock
         {
@@ -186,7 +190,7 @@ public partial class MainWindow
             BorderBrush = (Brush)FindResource("Line"), BorderThickness = new Thickness(1), Child = body,
         };
 
-        var buttons = GameButtons(g);
+        var buttons = GameButtons(g, fill: true);
         buttons.Margin = new Thickness(0, 8, 0, 0);
 
         var stack = new StackPanel { Width = w, Margin = new Thickness(0, 0, 16, 20) };
