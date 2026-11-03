@@ -2,6 +2,17 @@
 
 A numeração segue **SemVer** (`MAJOR.MINOR.PATCH`). Regras e processo em [docs/projeto/ATUALIZACOES.md](docs/projeto/ATUALIZACOES.md).
 
+## 0.6.3
+
+- **Limpeza da marca "RESET"** herdada do app-base: nomes de recursos deixam de levar o prefixo (`RESET BENCH` → **BENCH**, `RESET MAKER` → **MAKER**, `RESET DRIVER` → **DRIVER**, `RESET FERRAMENTAS` → **FERRAMENTAS**, `RESET JOGOS` → **JOGOS**, `RESET INTEGRAÇÃO` → **INTEGRAÇÃO**, `RESET OC` → **OC**, `RESET OTIMIZA` → **OTIMIZAÇÃO**) em textos, títulos de janelas, mensagens e comentários.
+- Botão do Overclock que restaura os padrões virou **REDEFINIR** (antes "RESET").
+- Corrigidos textos desatualizados: o tooltip de exportação de drivers agora aponta para `Documentos\PcismoMaster-Drivers` (pasta que o app já usava) e as menções internas à pasta de configurações passam a `%AppData%\PcismoMaster`.
+- **Saúde do PC** (Visão geral): o botão **OTIMIZA** agora é **OTIMIZAR**.
+- **Placa de vídeo**: o nome da fabricante no canto do cartão de destaque aparece colorido como uma logo, dentro da nossa paleta — **NVIDIA** no ciano (azul mais próximo do verde) e **AMD** no vermelho; outras (Intel) seguem discretas.
+- Preservados os créditos ao projeto original (MIT) e o namespace interno do código.
+- **App mais leve**: o `.exe` agora usa compressão no single-file — o tamanho cai bastante sem remover nada (todos os módulos continuam presentes, só são descomprimidos em memória ao abrir; a primeira abertura pode levar uma fração de segundo a mais).
+- Versão atualizada para 0.6.3.
+
 ## 0.6.2
 
 - Nova sub-aba **Desinstalar Apps** em OTIMIZAÇÃO (abaixo de MAKER), um desinstalador no estilo do Revo, porém **seguro**:
