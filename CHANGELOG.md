@@ -2,6 +2,17 @@
 
 A numeração segue **SemVer** (`MAJOR.MINOR.PATCH`). Regras e processo em [docs/projeto/ATUALIZACOES.md](docs/projeto/ATUALIZACOES.md).
 
+## Não lançado
+
+- **Overlay completo** (JOGOS · Overlay):
+  - **Prévia ao vivo** na própria aba, com os números reais deste PC, no formato, na posição e na opacidade escolhidos.
+  - **Formato horizontal (barra)**: tudo numa linha só (FPS, frame, 1% low, uso/temperatura/clock de CPU e GPU, VRAM, RAM, jogo), além do vertical com gráfico de frametime.
+  - **Centro superior e centro inferior**, além dos quatro cantos.
+  - **Opacidade do fundo** e **tamanho** em controles deslizantes (o tamanho agora vai de 70% a 200%).
+  - **Tecla de liga/desliga à sua escolha**: clique na caixa e aperte a tecla (F5, por exemplo) ou uma combinação; se outro programa já usa, avisa e mantém a anterior. O padrão continua Ctrl + Shift + O.
+  - **Temperaturas coloridas** no formato barra: verde até 74 °C, âmbar de 75 a 84 °C e vermelho de 85 °C em diante.
+  - A leitura do overlay só roda com ele ligado ou com a aba aberta (para a prévia); fora disso, não gasta nada.
+
 ## 0.8.0
 
 - **Ícone e logo laranja e preto**: o ícone do app (barra de tarefas, atalhos e .exe) virou a engrenagem em degradê laranja → âmbar sobre um quadrado preto arredondado; o logo da barra de título e do relatório ficou laranja (no modo claro, um laranja mais fechado para ler no branco).
