@@ -229,6 +229,32 @@ public static class GraphicsTweaks
     public static bool DrsApplied(string id) => File.Exists(DrsBackupFile(id));
 
     /// <summary>Grava no perfil global, guardando antes o que cada configuração tinha (valor seu ou herdado).</summary>
+    /// <summary>Aplica pelo nome do interruptor: "gfx-nv-drs" (perfil recomendado, ajustado à placa) ou "gfx-nv-gsync".</summary>
+    public static void ApplyDrsById(string id)
+    {
+        if (DrsApplied(id)) return;
+        ApplyDrs(id, id == "gfx-nv-gsync" ? GsyncOff : NipFor(GpuDetect.DetectNvidia()));
+    }
+
+    /// <summary>
+    /// Depois de instalar o driver com o app aberto, a NVAPI deste processo pode ainda não enxergar a placa: tenta algumas
+    /// vezes e, se não der, aplica num processo novo do próprio PcismoMaster (--apply-drs). Devolve null se deu certo, ou o erro.
+    /// </summary>
+    public static async Task<string?> ApplyDrsRobustAsync(string id)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            try { ApplyDrsById(id); return null; }
+            catch (Exception ex) when (i < 2) { DriverClean.Log($"Perfil NVIDIA ({id}), tentativa {i + 1}: {ex.Message}"); await Task.Delay(4000); }
+            catch (Exception ex) { DriverClean.Log($"Perfil NVIDIA ({id}), tentativa {i + 1}: {ex.Message}; tentando num processo novo."); }
+        }
+        string? exe = Environment.ProcessPath;
+        if (exe == null) return "não foi possível abrir o ajudante";
+        using var p = Process.Start(new ProcessStartInfo(exe, $"--apply-drs {id}") { UseShellExecute = false, CreateNoWindow = true })!;
+        await p.WaitForExitAsync().WaitAsync(TimeSpan.FromMinutes(2));
+        return DrsApplied(id) ? null : "a NVIDIA não aceitou o perfil agora; reinicie o PC e clique em Aplicar";
+    }
+
     public static void ApplyDrs(string id, (uint Id, uint Value, string Name)[] settings)
     {
         if (DrsApplied(id)) throw new InvalidOperationException("Já aplicado. Desfaça antes de aplicar de novo.");

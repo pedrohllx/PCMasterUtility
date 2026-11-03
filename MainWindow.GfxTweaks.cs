@@ -149,18 +149,19 @@ public partial class MainWindow
                 if (id == DrsNip || id == DrsGsync) GraphicsTweaks.RestoreDrs(id);
                 else GraphicsTweaks.Engine.Restore(GraphicsTweaks.ModuleFor(GraphicsTweaks.All.First(t => t.Id == id)));
             });
-            foreach (var id in turnOn) Try(id, () =>
+            foreach (var id in turnOn.Where(id => id != DrsNip && id != DrsGsync)) Try(id, () =>
             {
-                if (id == DrsNip) GraphicsTweaks.ApplyDrs(id, GraphicsTweaks.NipFor(_gfxCard));
-                else if (id == DrsGsync) GraphicsTweaks.ApplyDrs(id, GraphicsTweaks.GsyncOff);
-                else
-                {
-                    var m = GraphicsTweaks.ModuleFor(GraphicsTweaks.All.First(t => t.Id == id));
-                    if (m.Settings.Length == 0) throw new InvalidOperationException("nenhuma chave deste ajuste neste PC");
-                    GraphicsTweaks.Engine.Enable(m);
-                }
+                var m = GraphicsTweaks.ModuleFor(GraphicsTweaks.All.First(t => t.Id == id));
+                if (m.Settings.Length == 0) throw new InvalidOperationException("nenhuma chave deste ajuste neste PC");
+                GraphicsTweaks.Engine.Enable(m);
             });
         });
+        // Perfil global NVIDIA: com novas tentativas e, se preciso, num processo novo (driver recém-instalado).
+        foreach (var id in turnOn.Where(id => id == DrsNip || id == DrsGsync))
+        {
+            GfxStatus.Text = "Aplicando o perfil global da NVIDIA…";
+            if (await GraphicsTweaks.ApplyDrsRobustAsync(id) is string err) errors.Add($"{id}: {err}");
+        }
         void Try(string id, Action a) { try { a(); } catch (Exception ex) { lock (errors) errors.Add($"{id}: {ex.Message}"); } }
 
         _gfxBusy = false;
