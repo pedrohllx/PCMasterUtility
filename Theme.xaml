@@ -29,6 +29,8 @@
     </LinearGradientBrush>
     <SolidColorBrush x:Key="AccentCyan" Color="#FFB347"/>
     <SolidColorBrush x:Key="AccentSoft" Color="#26FF7A1A"/>
+    <!-- Quadrado claro atrás dos ícones de apps (Instalar/Desinstalar): ícones escuros e coloridos ficam todos legíveis -->
+    <SolidColorBrush x:Key="IconTile" Color="#F4EFEA"/>
 
     <!-- Selo pequeno ("Cria ponto de restauração", "Recomendado 1 vez por semana") da aba Manutenção -->
     <Style x:Key="MaintBadge" TargetType="Border">
