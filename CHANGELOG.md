@@ -2,7 +2,7 @@
 
 A numeração segue **SemVer** (`MAJOR.MINOR.PATCH`). Regras e processo em [docs/projeto/ATUALIZACOES.md](docs/projeto/ATUALIZACOES.md).
 
-## Em desenvolvimento
+## 0.7.0
 
 - **Drivers · nova sub-aba Painel NVIDIA**: o "Gerenciar as configurações em 3D" do Painel de Controle NVIDIA dentro do app, com os mesmos nomes e opções (em português), gravando direto nos perfis do driver.
   - **Configurações globais** e **de programa** (lista com busca); cada linha mostra de onde vem o valor (você, NVIDIA, global ou padrão) e "Usar a configuração global"/"Padrão do driver" tira a alteração.
@@ -53,6 +53,25 @@ A numeração segue **SemVer** (`MAJOR.MINOR.PATCH`). Regras e processo em [docs
   - Filtros: buscar configuração, **Só alteradas** e **Mostrar tudo** (configurações escondidas e as que o driver conhece sem nome).
   - Catálogo de configurações do nvidiaProfileInspector (Orbmu2k, licença MIT, em `licenses/`).
 - Novo ComboBox escuro no tema do app.
+- Fluidez: o .exe publicado já vem compilado (ReadyToRun + TieredPGO), sem engasgo ao abrir cada aba pela primeira vez.
+- Versão atualizada para 0.7.0.
+
+## 0.6.2
+
+- Nova sub-aba **Desinstalar Apps** em OTIMIZAÇÃO (abaixo de MAKER), um desinstalador no estilo do Revo, porém **seguro**:
+  - Lista só **programas de verdade** (componentes do Windows, drivers e atualizações ficam de fora) com nome, fabricante, versão e tamanho, com busca.
+  - Desinstala pelo **desinstalador oficial** do programa (o mesmo do Painel de Controle).
+  - Depois faz uma **varredura de sobras** (pastas em AppData/ProgramData/Program Files e chaves de registro de fornecedor) ligadas ao app e lista para você **revisar e marcar** o que remover.
+  - **Guardas de segurança**: só apaga dentro de Program Files / AppData / ProgramData e de ramos `Software\` do registro; **nunca** toca em pastas do Windows nem em chaves do sistema (Microsoft, Classes, Policies, Windows), e nada é apagado sem você marcar e confirmar.
+- Versão atualizada para 0.6.2.
+
+## 0.6.1
+
+- Aba **Instalar apps** bem maior, no estilo do **Ninite**, com os apps organizados em **sub-abas de categoria**: Navegadores, Mensagens, Mídia, Imagem, Documentos, Segurança, Compactação, Utilitários, Desenvolvimento e Jogos (além de "Todos"). Clique numa categoria para filtrar; MARCAR TODOS / DESMARCAR agora valem para a categoria aberta.
+- Dezenas de apps novos (Firefox, Brave, Opera, Zoom, Telegram, Spotify, Audacity, HandBrake, iTunes, GIMP, Paint.NET, Krita, Inkscape, IrfanView, ShareX, Greenshot, Blender, LibreOffice, SumatraPDF, Foxit, Acrobat Reader, Malwarebytes, PeaZip, Everything, TeamViewer, KeePassXC, WinDirStat, VS Code, Git, Python, Notepad++, PuTTY, WinSCP, Epic Games, entre outros), todos via winget.
+- Nada vem pré-marcado (como no Ninite): você escolhe o que instalar.
+- Os VC++ Redistributables **não** entram aqui de propósito (virão por outro caminho).
+- Versão atualizada para 0.6.1.
 
 ## 0.6.0
 
