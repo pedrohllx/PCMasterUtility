@@ -4,6 +4,7 @@ A numeração segue **SemVer** (`MAJOR.MINOR.PATCH`). Regras e processo em [docs
 
 ## Não lançado
 
+- **Ícone e logo laranja e preto**: o ícone do app (barra de tarefas, atalhos e .exe) virou a engrenagem em degradê laranja → âmbar sobre um quadrado preto arredondado; o logo da barra de título e do relatório ficou laranja (no modo claro, um laranja mais fechado para ler no branco).
 - **Navegação**: o grupo OTIMIZAÇÃO foi para dentro de **FERRAMENTAS** (Inicialização do Windows logo abaixo de Inicialização e Desinstalar Apps logo abaixo de Instalar apps).
 - **Instalar apps de cara nova**: cartões do mesmo tamanho em grade, agrupados por categoria e com o **ícone de cada app** num quadrado claro (do site do app, guardado no PC depois de baixar uma vez; plano B: o ícone do app instalado; sem ícone, a inicial). Clique no cartão para marcar, círculo de seleção e selo INSTALADO, busca, **Esconder instalados**, contador de selecionados e progresso no cartão.
 - **Desinstalar Apps · desinstalação profunda (estilo Revo/Geek Uninstaller)**:
