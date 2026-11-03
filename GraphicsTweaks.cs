@@ -238,7 +238,7 @@ public static class GraphicsTweaks
 
     /// <summary>
     /// Depois de instalar o driver com o app aberto, a NVAPI deste processo pode ainda não enxergar a placa: tenta algumas
-    /// vezes e, se não der, aplica num processo novo do próprio PcismoMaster (--apply-drs). Devolve null se deu certo, ou o erro.
+    /// vezes e, se não der, aplica num processo novo do próprio PCMasterUtility (--apply-drs). Devolve null se deu certo, ou o erro.
     /// </summary>
     public static async Task<string?> ApplyDrsRobustAsync(string id)
     {

@@ -49,7 +49,7 @@ public static class DiskBench
         if (di.TotalFreeSpace < fileBytes + (512L << 20))
             throw new IOException($"Pouco espaço livre em {driveRoot} (precisa de {fileMb + 512} MB).");
 
-        string dir = Path.Combine(driveRoot, "PcismoMasterBench");
+        string dir = Path.Combine(driveRoot, "PCMasterUtilityBench");
         string path = Path.Combine(dir, "bench.tmp");
         Directory.CreateDirectory(dir);
 

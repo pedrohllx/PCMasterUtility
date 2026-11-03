@@ -14,7 +14,7 @@ namespace ResetExplode;
 /// </summary>
 public static class DriverDebloat
 {
-    public static string WorkDir => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Temp", "PcismoMaster-Driver");
+    public static string WorkDir => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Temp", "PCMasterUtility-Driver");
 
     public static string? SevenZip()
         => new[] { Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86) }

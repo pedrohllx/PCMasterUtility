@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:ResetExplode"
-        Title="PcismoMaster" Icon="Assets/app.ico" Width="1320" Height="840" MinWidth="1120" MinHeight="660"
+        Title="PCMasterUtility" Icon="Assets/app.ico" Width="1320" Height="840" MinWidth="1120" MinHeight="660"
         WindowStartupLocation="CenterScreen" WindowStyle="None" ResizeMode="CanResize"
         Background="{DynamicResource Bg}" Foreground="{DynamicResource Fg}"
         FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13"
@@ -122,8 +122,8 @@
             <StackPanel Grid.ColumnSpan="2" Orientation="Horizontal" Margin="30,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center">
                 <Image x:Name="TitleLogo" Source="Assets/logo.png" Width="22" Height="22" Margin="0,0,12,0" VerticalAlignment="Center"
                        RenderOptions.BitmapScalingMode="HighQuality"/>
-                <TextBlock Text="Pcismo" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
-                <TextBlock Text="Master" FontWeight="Light" FontSize="13" VerticalAlignment="Center"/>
+                <TextBlock Text="PCMaster" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
+                <TextBlock Text="Utility" FontWeight="Light" FontSize="13" VerticalAlignment="Center"/>
                 <TextBlock x:Name="TitlePage" Foreground="{DynamicResource Faint}" FontSize="13" Margin="16,0,0,0" VerticalAlignment="Center"/>
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right"
@@ -161,13 +161,13 @@
                                     <RowDefinition/>
                                     <RowDefinition/>
                                 </Grid.RowDefinitions>
-                                <TextBlock Text="CPU" Foreground="#A647FE" FontSize="10.5" FontWeight="Bold" Margin="0,3" VerticalAlignment="Center"/>
+                                <TextBlock Text="CPU" Foreground="#FF5E00" FontSize="10.5" FontWeight="Bold" Margin="0,3" VerticalAlignment="Center"/>
                                 <TextBlock x:Name="SideTemp" Grid.Column="1" Text="—" FontFamily="{StaticResource Mono}" FontSize="12" Margin="0,3"/>
                                 <TextBlock x:Name="SideLoad" Grid.Column="2" Text="—" FontFamily="{StaticResource Mono}" FontSize="12" Foreground="{DynamicResource Muted}" Margin="0,3"/>
-                                <TextBlock Grid.Row="1" Text="GPU" Foreground="#7571F0" FontSize="10.5" FontWeight="Bold" Margin="0,3" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Row="1" Text="GPU" Foreground="#FF8A1F" FontSize="10.5" FontWeight="Bold" Margin="0,3" VerticalAlignment="Center"/>
                                 <TextBlock x:Name="SideGpuTemp" Grid.Row="1" Grid.Column="1" Text="—" FontFamily="{StaticResource Mono}" FontSize="12" Margin="0,3"/>
                                 <TextBlock x:Name="SideGpuLoad" Grid.Row="1" Grid.Column="2" Text="—" FontFamily="{StaticResource Mono}" FontSize="12" Foreground="{DynamicResource Muted}" Margin="0,3"/>
-                                <TextBlock Grid.Row="2" Text="TESTE" Foreground="#29B4D9" FontSize="10.5" FontWeight="Bold" Margin="0,3" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Row="2" Text="TESTE" Foreground="#FFB347" FontSize="10.5" FontWeight="Bold" Margin="0,3" VerticalAlignment="Center"/>
                                 <TextBlock x:Name="SideStress" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Text="parado" FontFamily="{StaticResource Mono}" FontSize="12" Margin="0,3"/>
                             </Grid>
                         </Border>
@@ -3116,7 +3116,7 @@
                                             HorizontalAlignment="Right" VerticalAlignment="Top" Click="BtnMakerBundleAll_Click"/>
                                 </Grid>
                                 <TextBlock Foreground="{DynamicResource Faint}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,10">
-                                    Drivers oficiais de cada fabricante que já vêm dentro do PcismoMaster: instalam sem internet, ideal logo depois
+                                    Drivers oficiais de cada fabricante que já vêm dentro do PCMasterUtility: instalam sem internet, ideal logo depois
                                     de formatar. Pode instalar com a placa desconectada; o Windows usa o driver quando ela for plugada.
                                     Os drivers Arduino são assinados pela Arduino (não pela Microsoft): o Windows pode pedir confirmação.
                                 </TextBlock>
@@ -3241,7 +3241,7 @@
                                     <Button x:Name="BtnOcSave" Style="{StaticResource OutlineButton}" Content="SALVAR"
                                             Padding="16,9" Margin="0,0,10,8" Click="BtnOcSave_Click"/>
                                 </WrapPanel>
-                                <CheckBox x:Name="OcApplyOnStart" Content="Reaplicar os últimos ajustes aplicados sempre que o PcismoMaster abrir"
+                                <CheckBox x:Name="OcApplyOnStart" Content="Reaplicar os últimos ajustes aplicados sempre que o PCMasterUtility abrir"
                                           Margin="0,2,0,8" Checked="OcApplyOnStart_Changed" Unchecked="OcApplyOnStart_Changed"/>
                                 <TextBlock x:Name="OcGpuResult" TextWrapping="Wrap"/>
                                 <TextBlock Foreground="{DynamicResource Faint}" FontSize="11" TextWrapping="Wrap" Margin="0,8,0,0">
@@ -3289,7 +3289,7 @@
                             <StackPanel>
                                 <TextBlock Text="CURVA DE FANS" Style="{StaticResource Label}" Margin="0,0,0,6"/>
                                 <TextBlock Foreground="{DynamicResource Faint}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,10">
-                                    Como no Afterburner, a curva é controlada pelo PcismoMaster: ele lê a temperatura a cada segundo e ajusta
+                                    Como no Afterburner, a curva é controlada pelo PCMasterUtility: ele lê a temperatura a cada segundo e ajusta
                                     os fans. Arraste os pontos, clique duas vezes no gráfico para criar um ponto e clique com o botão direito
                                     num ponto para apagá-lo. Ao fechar o app, os fans voltam para o automático da placa.
                                 </TextBlock>

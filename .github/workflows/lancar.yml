@@ -22,8 +22,8 @@ jobs:
           $csproj = ([xml](Get-Content PcismoMaster.csproj)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
           if ($csproj -ne $ver) { throw "Tag v$ver não bate com Version $csproj do csproj" }
           Get-ChildItem dist -Filter *.pdb | Remove-Item
-          Compress-Archive -Path dist\* -DestinationPath "PcismoMaster-$ver-win-x64.zip"
-          Copy-Item dist\PcismoMaster.exe "PcismoMaster-$ver.exe"
+          Compress-Archive -Path dist\* -DestinationPath "PCMasterUtility-$ver-win-x64.zip"
+          Copy-Item dist\PCMasterUtility.exe "PCMasterUtility-$ver.exe"
           $lines = Get-Content CHANGELOG.md
           $start = [array]::IndexOf($lines, "## $ver")
           if ($start -lt 0) { throw "Seção ## $ver não encontrada no CHANGELOG" }
@@ -31,8 +31,8 @@ jobs:
           ($notes -join "`n").Trim() | Set-Content notas.md -Encoding utf8
       - uses: softprops/action-gh-release@v2
         with:
-          name: PcismoMaster ${{ github.ref_name }}
+          name: PCMasterUtility ${{ github.ref_name }}
           body_path: notas.md
           files: |
-            PcismoMaster-*.exe
-            PcismoMaster-*-win-x64.zip
+            PCMasterUtility-*.exe
+            PCMasterUtility-*-win-x64.zip

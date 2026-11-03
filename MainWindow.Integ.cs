@@ -273,9 +273,9 @@ public partial class MainWindow
     {
         if (_lightBusy) return;
         var ok = MessageBox.Show(this,
-            "O PcismoMaster vai baixar o SDK oficial da Corsair (github.com/CorsairOfficial/cue-sdk), extrair somente o arquivo " +
+            "O PCMasterUtility vai baixar o SDK oficial da Corsair (github.com/CorsairOfficial/cue-sdk), extrair somente o arquivo " +
             "iCUESDK.x64_2019.dll para a pasta\n" + CorsairSdkInstaller.TargetPath + "\ne conferir a assinatura digital dele.\n\nContinuar?",
-            "PcismoMaster · SDK da Corsair", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            "PCMasterUtility · SDK da Corsair", MessageBoxButton.YesNo, MessageBoxImage.Question);
         if (ok != MessageBoxResult.Yes) return;
 
         _lightBusy = true;

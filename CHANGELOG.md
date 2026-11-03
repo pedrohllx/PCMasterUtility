@@ -4,6 +4,8 @@ A numeração segue **SemVer** (`MAJOR.MINOR.PATCH`). Regras e processo em [docs
 
 ## Não lançado
 
+- **Novo nome: PCMasterUtility** (antes PcismoMaster): barra de título, janelas, avisos, relatório, notificação e o .exe (`PCMasterUtility.exe`; Release com `PCMasterUtility-X.Y.Z.exe` e `.zip`). As pastas de dados continuam em `%LocalAppData%PcismoMaster` e `%AppData%PcismoMaster`, então backups, desfazer e o registro do DDU continuam valendo.
+- **Tema laranja e preto**: fundo preto neutro com um toque quente e destaque em degradê laranja → âmbar no lugar do roxo/ciano (botões, abas, interruptores, barras de rolagem, hover das categorias, anéis de RAM/VRAM/Disco); texto preto sobre o laranja para ler bem. O modo claro também ganhou neutros quentes e laranja. Cores de temperatura e de status continuam iguais.
 - **Utilidades · Finder mais leve**: o índice da MFT guarda os nomes num buffer único e liga cada item ao pai por posição (busca binária no número do registro), sem milhões de strings soltas nem dicionário. Num teste com 3,5 milhões de itens, a memória do índice caiu de ~480 MB para ~130 MB (processo: ~530 MB → ~190 MB) e a coleta completa do GC de ~40 ms para menos de 1 ms, com a mesma velocidade de busca.
 - O índice sai da memória **5 minutos depois de sair do Finder** (outra sub-aba ou outra página) e é refeito ao voltar.
 

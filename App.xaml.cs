@@ -6,7 +6,7 @@ namespace ResetExplode;
 
 public partial class App : Application
 {
-    // Uma única instância: abrir o PcismoMaster de novo só traz a janela que já está aberta para a frente.
+    // Uma única instância: abrir o PCMasterUtility de novo só traz a janela que já está aberta para a frente.
     private static Mutex? _single;
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr FindWindow(string? cls, string title);
@@ -31,12 +31,12 @@ public partial class App : Application
         }
 
         bool first;
-        try { _single = new Mutex(true, @"Local\PcismoMaster.SingleInstance", out first); }
+        try { _single = new Mutex(true, @"Local\PCMasterUtility.SingleInstance", out first); }
         catch (UnauthorizedAccessException) { first = false; } // criado por outra instância com outro nível de permissão
 
         if (!first)
         {
-            IntPtr h = FindWindow(null, "PcismoMaster");
+            IntPtr h = FindWindow(null, "PCMasterUtility");
             if (h != IntPtr.Zero)
             {
                 if (IsIconic(h)) ShowWindow(h, 9); // SW_RESTORE

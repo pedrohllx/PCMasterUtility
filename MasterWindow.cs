@@ -18,20 +18,20 @@ public sealed class MasterWindow : Window
     private static Brush Color(string hex) => new SolidColorBrush((System.Windows.Media.Color)ColorConverter.ConvertFromString(hex));
     public MasterWindow()
     {
-        Title = "PcismoMaster"; Width = 1180; Height = 820; MinWidth = 800; MinHeight = 600;
+        Title = "PCMasterUtility"; Width = 1180; Height = 820; MinWidth = 800; MinHeight = 600;
         Icon = new System.Windows.Media.Imaging.BitmapImage(new Uri("pack://application:,,,/Assets/app.ico"));
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
-        Background = Color("#10131C"); Foreground = Brushes.White; FontFamily = new FontFamily("Segoe UI");
+        Background = Color("#0A0A0A"); Foreground = Brushes.White; FontFamily = new FontFamily("Segoe UI");
         var layout = new Grid(); layout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(230) }); layout.ColumnDefinitions.Add(new ColumnDefinition());
         Content = layout;
         var sidebar = new StackPanel { Margin = new Thickness(24, 32, 20, 24) }; layout.Children.Add(sidebar);
-        sidebar.Children.Add(Text("P / M", 30, "#A9A0FF"));
-        sidebar.Children.Add(Text("PcismoMaster", 22));
-        sidebar.Children.Add(Text("SEU PC. SEU CONTROLE.", 10, "#A6AEC4"));
-        sidebar.Children.Add(Text("\nMVP 0.1 · WINDOWS", 11, "#A6AEC4"));
+        sidebar.Children.Add(Text("P / M", 30, "#FF9A3C"));
+        sidebar.Children.Add(Text("PCMasterUtility", 22));
+        sidebar.Children.Add(Text("SEU PC. SEU CONTROLE.", 10, "#B3A698"));
+        sidebar.Children.Add(Text("\nMVP 0.1 · WINDOWS", 11, "#B3A698"));
         foreach (var name in new[] { "Todos", "Aparência", "Windows", "Gráficos" })
             sidebar.Children.Add(Button(name, () => { category = name; Render(); }));
-        sidebar.Children.Add(Text("\nFERRAMENTAS", 11, "#A6AEC4"));
+        sidebar.Children.Add(Text("\nFERRAMENTAS", 11, "#B3A698"));
         sidebar.Children.Add(Button("Hardware e diagnóstico ↗", () =>
         {
             if (hardware == null) { hardware = new MainWindow(); hardware.Closed += (_, _) => hardware = null; hardware.Show(); }
@@ -39,12 +39,12 @@ public sealed class MasterWindow : Window
         }));
         sidebar.Children.Add(Button("Guia e créditos ↗", () => Open("README.md")));
         sidebar.Children.Add(Button("Atualizar estados", Render));
-        sidebar.Children.Add(Text("\nBase: ResetExplode\nMódulos: Ultimate / FR33THY\nLicenças MIT preservadas", 11, "#A6AEC4"));
+        sidebar.Children.Add(Text("\nBase: ResetExplode\nMódulos: Ultimate / FR33THY\nLicenças MIT preservadas", 11, "#B3A698"));
         var main = new DockPanel { Margin = new Thickness(20, 30, 30, 20) }; Grid.SetColumn(main, 1); layout.Children.Add(main);
         var heading = new StackPanel(); DockPanel.SetDock(heading, Dock.Top); main.Children.Add(heading);
-        heading.Children.Add(Text("CENTRAL MODULAR", 11, "#A9A0FF"));
+        heading.Children.Add(Text("CENTRAL MODULAR", 11, "#FF9A3C"));
         heading.Children.Add(Text("Ajustes sob seu controle", 30));
-        heading.Children.Add(Text("Ative individualmente. Desative restaurando o estado anterior.", 14, "#A6AEC4"));
+        heading.Children.Add(Text("Ative individualmente. Desative restaurando o estado anterior.", 14, "#B3A698"));
         summary.Margin = new Thickness(0, 16, 0, 0); summary.TextWrapping = TextWrapping.Wrap; heading.Children.Add(summary);
         heading.Children.Add(search); search.TextChanged += (_, _) => Render();
         main.Children.Add(new ScrollViewer { Content = cards, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
@@ -55,10 +55,10 @@ public sealed class MasterWindow : Window
         try { Process.Start(new ProcessStartInfo(Path.Combine(AppContext.BaseDirectory, file)) { UseShellExecute = true }); }
         catch (Exception ex) { MessageBox.Show(this, ex.Message, "Não foi possível abrir"); }
     }
-    private static TextBlock Text(string value, double size = 14, string hex = "#F3F4FA") => new() { Text = value, FontSize = size, Foreground = Color(hex), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 8) };
+    private static TextBlock Text(string value, double size = 14, string hex = "#FFF7F0") => new() { Text = value, FontSize = size, Foreground = Color(hex), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 8) };
     private static Button Button(string label, Action action)
     {
-        var button = new Button { Content = label, Padding = new Thickness(12, 9, 12, 9), Margin = new Thickness(0, 5, 8, 5), HorizontalContentAlignment = HorizontalAlignment.Left, Background = Color("#28283E"), Foreground = Brushes.White };
+        var button = new Button { Content = label, Padding = new Thickness(12, 9, 12, 9), Margin = new Thickness(0, 5, 8, 5), HorizontalContentAlignment = HorizontalAlignment.Left, Background = Color("#1E1813"), Foreground = Brushes.White };
         button.Click += (_, _) => action(); return button;
     }
     private void Render()
@@ -68,13 +68,13 @@ public sealed class MasterWindow : Window
         foreach (var module in ModuleCatalog.All.Where(m => (category == "Todos" || m.Category == category) && (m.Title + m.Description + m.Category).Contains(search.Text, StringComparison.OrdinalIgnoreCase)))
         {
             var panel = new StackPanel();
-            var card = new Border { Child = panel, Background = Color("#191E2C"), CornerRadius = new CornerRadius(10), Padding = new Thickness(20), Margin = new Thickness(0, 0, 0, 12) }; cards.Children.Add(card);
+            var card = new Border { Child = panel, Background = Color("#121110"), CornerRadius = new CornerRadius(10), Padding = new Thickness(20), Margin = new Thickness(0, 0, 0, 12) }; cards.Children.Add(card);
             bool backup = engine.HasBackup(module); bool matches = false; string? error = null;
             try { matches = engine.Matches(module); } catch (Exception ex) { error = ex.Message; }
-            panel.Children.Add(Text(module.Category.ToUpperInvariant() + "  /  " + (error != null ? "LEITURA INDISPONÍVEL" : backup ? matches ? "APLICADO · BACKUP SALVO" : "DIVERGÊNCIA OU RECUPERAÇÃO PENDENTE" : matches ? "JÁ CONFIGURADO · SEM BACKUP" : "NÃO APLICADO PELO APP"), 10, "#B7AEFF"));
+            panel.Children.Add(Text(module.Category.ToUpperInvariant() + "  /  " + (error != null ? "LEITURA INDISPONÍVEL" : backup ? matches ? "APLICADO · BACKUP SALVO" : "DIVERGÊNCIA OU RECUPERAÇÃO PENDENTE" : matches ? "JÁ CONFIGURADO · SEM BACKUP" : "NÃO APLICADO PELO APP"), 10, "#FFB347"));
             panel.Children.Add(Text(module.Title, 20));
-            panel.Children.Add(Text(error ?? module.Description, 13, "#B8C0D3"));
-            panel.Children.Add(Text("Origem: Ultimate / " + module.Source, 10, "#A6AEC4"));
+            panel.Children.Add(Text(error ?? module.Description, 13, "#D8CEC3"));
+            panel.Children.Add(Text("Origem: Ultimate / " + module.Source, 10, "#B3A698"));
             var actions = new WrapPanel(); panel.Children.Add(actions);
             actions.Children.Add(Button("Ver alterações", () => { try { MessageBox.Show(this, engine.Preview(module), module.Title); } catch (Exception ex) { MessageBox.Show(this, ex.Message); } }));
             var toggle = Button(backup ? "Desativar / restaurar" : "Ativar módulo", () => Change(module, backup));

@@ -48,14 +48,14 @@ public partial class MainWindow
         var o = new DduOptions(DduAuto.IsChecked == true, CheckedTag(DduGpuPanel) ?? "all", DduAudio.IsChecked == true, DduBlockWu.IsChecked == true);
         string gpuText = o.Gpus switch { "nvidia" => "o driver NVIDIA", "amd" => "o driver AMD", "intel" => "o driver Intel", _ => "os drivers de todas as placas de vídeo" };
         string ask = $"Limpar {gpuText} com o DDU?\n\n" +
-                     "1. O PcismoMaster baixa e confere o DDU.\n" +
+                     "1. O PCMasterUtility baixa e confere o DDU.\n" +
                      "2. Cria um ponto de restauração.\n" +
                      "3. Reinicia no MODO DE SEGURANÇA (feche e salve tudo antes).\n" +
                      (o.Auto ? "4. Ao entrar com sua conta, o DDU limpa sozinho e o PC reinicia normal, sem driver de vídeo.\n"
                              : "4. Ao entrar com sua conta, o DDU abre: escolha a placa e clique em \"Clean and restart\".\n") +
                      "5. Depois, instale o driver no cartão \"Instalar driver e configurações\"." +
                      (o.Audio ? "\n\nVocê marcou remover o áudio Realtek/Sound Blaster: o PC fica sem som até reinstalar o driver de áudio." : "") +
-                     "\n\nSe a limpeza não começar no modo de segurança, use o atalho \"Sair do modo de segurança (PcismoMaster)\" na Área de Trabalho.";
+                     "\n\nSe a limpeza não começar no modo de segurança, use o atalho \"Sair do modo de segurança (PCMasterUtility)\" na Área de Trabalho.";
         if (MessageBox.Show(this, ask, "Limpeza do driver de vídeo", MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK) return;
 
         _dduBusy = true;

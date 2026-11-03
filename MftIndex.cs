@@ -8,7 +8,7 @@ namespace ResetExplode;
 
 /// <summary>
 /// Índice de arquivos e pastas no estilo do Everything. Lê a MFT (Master File Table) de cada volume NTFS direto
-/// pelo FSCTL_ENUM_USN_DATA (precisa de administrador — o PcismoMaster já roda elevado) e guarda em memória o nome
+/// pelo FSCTL_ENUM_USN_DATA (precisa de administrador — o PCMasterUtility já roda elevado) e guarda em memória o nome
 /// e o pai de cada registro. O caminho completo é remontado só na hora de mostrar, e a busca por trecho do nome é
 /// instantânea. Só indexa volumes fixos NTFS prontos.
 /// <para>Leve para a RAM e para o GC: em vez de milhões de <see cref="string"/> e de um dicionário, os nomes ficam

@@ -1,4 +1,4 @@
-name: Validar PcismoMaster
+name: Validar PCMasterUtility
 on:
   push:
   pull_request:
@@ -17,5 +17,5 @@ jobs:
       - run: dotnet publish PcismoMaster.csproj -c Release -r win-x64 --self-contained true -o dist --nologo
       - uses: actions/upload-artifact@v4
         with:
-          name: PcismoMaster-win-x64
+          name: PCMasterUtility-win-x64
           path: dist/

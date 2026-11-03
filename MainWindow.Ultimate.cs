@@ -28,7 +28,7 @@ public partial class MainWindow
 
     private void RefreshWindowsUpdate()
     {
-        try { WuStatus.Text = updateEngine.HasBackup(UpdateModule()) ? "Backup disponível. Você pode restaurar a configuração anterior." : "Nenhuma pausa aplicada pelo PcismoMaster."; }
+        try { WuStatus.Text = updateEngine.HasBackup(UpdateModule()) ? "Backup disponível. Você pode restaurar a configuração anterior." : "Nenhuma pausa aplicada pelo PCMasterUtility."; }
         catch (Exception ex) { WuStatus.Text = ex.Message; }
     }
 
@@ -39,7 +39,7 @@ public partial class MainWindow
             var m = UpdateModule();
             if (restore && !updateEngine.HasBackup(m))
             {
-                MessageBox.Show(this, "Não há nada para restaurar: o PcismoMaster ainda não pausou o Windows Update neste PC.", "Windows Update", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, "Não há nada para restaurar: o PCMasterUtility ainda não pausou o Windows Update neste PC.", "Windows Update", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
             var label = restore ? "Restaurar configuração anterior" : "Pausar por 365 dias";

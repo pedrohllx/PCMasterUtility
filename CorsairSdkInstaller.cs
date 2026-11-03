@@ -24,7 +24,7 @@ public static class CorsairSdkInstaller
     private static HttpClient CreateClient()
     {
         var c = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
-        c.DefaultRequestHeaders.UserAgent.ParseAdd("PcismoMaster");
+        c.DefaultRequestHeaders.UserAgent.ParseAdd("PCMasterUtility");
         c.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
         return c;
     }
@@ -51,7 +51,7 @@ public static class CorsairSdkInstaller
             urls.Add(("código-fonte " + tag, zip));
         if (urls.Count == 0) throw new InvalidOperationException("A release não tem nenhum arquivo .zip para baixar.");
 
-        string tmpDir = Path.Combine(Path.GetTempPath(), "PcismoMaster-cue-" + Guid.NewGuid().ToString("N"));
+        string tmpDir = Path.Combine(Path.GetTempPath(), "PCMasterUtility-cue-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tmpDir);
         try
         {

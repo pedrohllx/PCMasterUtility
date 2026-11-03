@@ -13,7 +13,7 @@ public sealed record DduOptions(bool Auto, string Gpus, bool Audio, bool BlockWu
 
 /// <summary>
 /// Limpeza completa de driver de vídeo com o Display Driver Uninstaller (DDU, Wagnardsoft) no modo de segurança —
-/// a versão do PcismoMaster do "5 Graphics/1 Driver Clean.ps1" do Ultimate (MIT). Diferenças do script:
+/// a versão do PCMasterUtility do "5 Graphics/1 Driver Clean.ps1" do Ultimate (MIT). Diferenças do script:
 /// confere a assinatura da Wagnardsoft, extrai o DDU sem precisar do 7-Zip, só mexe no boot depois de tudo pronto
 /// e conferido, guarda o valor do Windows Update para poder desfazer, deixa um atalho de emergência para sair do
 /// modo de segurança e reinicia com contagem regressiva que pode ser cancelada.
@@ -27,7 +27,7 @@ public static class DriverClean
 
     public static string WorkDir => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Temp", "PcismoMaster-DDU");
     private static string Sys(string exe) => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), exe);
-    public static string EmergencyShortcut => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory), "Sair do modo de segurança (PcismoMaster).cmd");
+    public static string EmergencyShortcut => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory), "Sair do modo de segurança (PCMasterUtility).cmd");
 
     /// <summary>Baixa (ou usa o arquivo escolhido), confere a assinatura, extrai e configura o DDU. Devolve o caminho do executável.</summary>
     public static async Task<string> PrepareAsync(DduOptions o, string? localSetup, Action<string> log, CancellationToken ct)
@@ -162,17 +162,17 @@ public static class DriverClean
             : $"$p = Start-Process -FilePath '{ddu}' -Wait -PassThru";
         string logFile = LogFile.Replace("'", "''");
         File.WriteAllText(script,
-            "# PcismoMaster: limpeza de driver com o DDU (modo de segurança)\r\n" +
+            "# PCMasterUtility: limpeza de driver com o DDU (modo de segurança)\r\n" +
             $"function L($t) {{ Add-Content -LiteralPath '{logFile}' -Value ((Get-Date -Format 'yyyy-MM-dd HH:mm:ss') + '  [modo de segurança] ' + $t) }}\r\n" +
             "L 'Script iniciado.'\r\n" +
             "# 1) sai do modo de segurança no próximo boot, aconteça o que acontecer\r\n" +
             $"& '{Sys("bcdedit.exe")}' /deletevalue '{{current}}' safeboot | Out-Null\r\n" +
             "L ('Modo de segurança desfeito para o próximo boot (código ' + $LASTEXITCODE + ').')\r\n" +
-            "Write-Host 'PcismoMaster: limpando o driver de vídeo com o DDU...'\r\n" +
+            "Write-Host 'PCMasterUtility: limpando o driver de vídeo com o DDU...'\r\n" +
             "# 2) DDU\r\n" +
             "try {\r\n  " + body + "\r\n  L ('DDU terminou (código ' + $p.ExitCode + ').')\r\n} catch { L ('Falha ao abrir o DDU: ' + $_.Exception.Message) }\r\n");
         File.WriteAllText(EmergencyShortcut,
-            "@echo off\r\nrem PcismoMaster: tira o modo de segurança e reinicia (use se a limpeza não começar sozinha)\r\n" +
+            "@echo off\r\nrem PCMasterUtility: tira o modo de segurança e reinicia (use se a limpeza não começar sozinha)\r\n" +
             "bcdedit /deletevalue {current} safeboot\r\nshutdown /r /t 5\r\n");
 
         using (var k = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce"))
@@ -203,7 +203,7 @@ public static class DriverClean
     /// <summary>Agenda o reinício e confere se o Windows aceitou (ex.: código 1190 = já havia um desligamento agendado).</summary>
     public static void Restart(int seconds)
     {
-        var psi = new ProcessStartInfo(Sys("shutdown.exe"), $"/r /t {seconds} /c \"PcismoMaster: reiniciando em modo de segurança para limpar o driver de vídeo.\"")
+        var psi = new ProcessStartInfo(Sys("shutdown.exe"), $"/r /t {seconds} /c \"PCMasterUtility: reiniciando em modo de segurança para limpar o driver de vídeo.\"")
             { UseShellExecute = false, CreateNoWindow = true, RedirectStandardError = true, RedirectStandardOutput = true };
         using var p = Process.Start(psi)!;
         string err = p.StandardError.ReadToEnd() + p.StandardOutput.ReadToEnd();

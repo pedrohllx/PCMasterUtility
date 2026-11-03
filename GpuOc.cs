@@ -101,7 +101,7 @@ public sealed class GpuOc
         return (a.CoreMhz, a.MemMhz, a.VoltagePercent);
     }
 
-    /// <summary>O ajuste que está na placa agora, seja do PcismoMaster ou do Afterburner: offset do core (o delta mais
+    /// <summary>O ajuste que está na placa agora, seja do PCMasterUtility ou do Afterburner: offset do core (o delta mais
     /// comum abaixo do teto), teto de undervolt (onde a curva efetiva fica plana até o fim), memória e tensão.</summary>
     public (int CoreMhz, int MemMhz, int VoltagePercent, int? CapMv, int? CapMhz) ReadApplied()
     {

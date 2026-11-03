@@ -221,7 +221,7 @@ public partial class MainWindow : Window
         string why = SensorMonitor.Explain(p);
         if (p != SensorMonitor.CpuSensorProblem.PawnIOMissing)
         {
-            MessageBox.Show(why, "PcismoMaster", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(why, "PCMasterUtility", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
@@ -233,17 +233,17 @@ public partial class MainWindow : Window
             MessageBox.Show(why + "\n\nO instalador de pacotes do Windows (winget) não foi encontrado neste PC. " +
                             "Atualize o \"Instalador de Aplicativo\" pela Microsoft Store e use o botão de novo, " +
                             "ou instale o PawnIO (autor: namazso) manualmente.",
-                            "PcismoMaster", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            "PCMasterUtility", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
         var r = MessageBox.Show(why + "\n\nInstalar o PawnIO agora? Vai abrir uma janela com o instalador do Windows (winget). " +
-                                "Quando terminar, feche o PcismoMaster e abra de novo.",
-                                "PcismoMaster", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                                "Quando terminar, feche o PCMasterUtility e abra de novo.",
+                                "PCMasterUtility", MessageBoxButton.YesNo, MessageBoxImage.Question);
         if (r != MessageBoxResult.Yes) return;
         System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("cmd.exe",
             "/k winget install --id namazso.PawnIO -e --accept-package-agreements --accept-source-agreements" +
-            " && echo. && echo Pronto! Feche esta janela e reabra o PcismoMaster.")
+            " && echo. && echo Pronto! Feche esta janela e reabra o PCMasterUtility.")
         { UseShellExecute = true });
     }
 
@@ -964,7 +964,7 @@ public partial class MainWindow : Window
     private bool RequireAdmin()
     {
         if (SensorMonitor.IsElevated) return true;
-        MessageBox.Show("Esta ação precisa do PcismoMaster aberto como administrador.", "PcismoMaster",
+        MessageBox.Show("Esta ação precisa do PCMasterUtility aberto como administrador.", "PCMasterUtility",
                         MessageBoxButton.OK, MessageBoxImage.Warning);
         return false;
     }
@@ -1033,11 +1033,11 @@ public partial class MainWindow : Window
     {
         if (_settings.TweakBackup.Count == 0)
         {
-            MessageBox.Show("Nenhum ajuste foi alterado pelo PcismoMaster ainda.", "RESET OTIMIZA",
+            MessageBox.Show("Nenhum ajuste foi alterado pelo PCMasterUtility ainda.", "RESET OTIMIZA",
                             MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
-        var r = MessageBox.Show("Voltar todos os ajustes do Windows para como estavam antes do PcismoMaster alterá-los?",
+        var r = MessageBox.Show("Voltar todos os ajustes do Windows para como estavam antes do PCMasterUtility alterá-los?",
                                 "RESET OTIMIZA", MessageBoxButton.YesNo, MessageBoxImage.Question);
         if (r != MessageBoxResult.Yes) return;
         bool restart = _tweaks.Any(t => t.NeedsRestart && _settings.TweakBackup.ContainsKey(t.Id));
@@ -1480,17 +1480,17 @@ public partial class MainWindow : Window
             string why = SensorMonitor.IsPawnIOInstalled
                 ? ""
                 : "\n\nCausa provável: o driver PawnIO não está instalado. Instale com:\n" +
-                  "winget install namazso.PawnIO\ne reabra o PcismoMaster.";
+                  "winget install namazso.PawnIO\ne reabra o PCMasterUtility.";
             var r = MessageBox.Show("Nenhum sensor de temperatura da CPU foi encontrado, então o corte automático " +
                                     "por temperatura da CPU NÃO funcionará. Continuar mesmo assim?" + why,
-                                    "PcismoMaster", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                                    "PCMasterUtility", MessageBoxButton.YesNo, MessageBoxImage.Warning);
             if (r != MessageBoxResult.Yes) return;
         }
         if (gpu && MainGpuTemp() == null)
         {
             var r = MessageBox.Show("Nenhum sensor de temperatura da GPU foi encontrado, então o corte automático " +
                                     "por temperatura da GPU NÃO funcionará. Continuar mesmo assim?",
-                                    "PcismoMaster", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                                    "PCMasterUtility", MessageBoxButton.YesNo, MessageBoxImage.Warning);
             if (r != MessageBoxResult.Yes) return;
         }
 

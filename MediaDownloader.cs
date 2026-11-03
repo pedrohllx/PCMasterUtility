@@ -6,16 +6,16 @@ namespace ResetExplode;
 
 /// <summary>
 /// Baixa áudio (mp3) ou vídeo (mp4) de um link (YouTube, Instagram etc.) usando o yt-dlp + ffmpeg, instalados
-/// pela aba "Instalar apps". Nenhum binário é embutido no PcismoMaster.
+/// pela aba "Instalar apps". Nenhum binário é embutido no PCMasterUtility.
 /// </summary>
 public static class MediaDownloader
 {
     /// <summary>true quando yt-dlp e ffmpeg estão disponíveis (instalados pela aba Instalar apps ou no PATH).</summary>
     public static bool Ready => ExternalTools.Has("yt-dlp") && ExternalTools.Has("ffmpeg");
 
-    /// <summary>Pasta padrão de saída: Downloads\PcismoMaster do usuário.</summary>
+    /// <summary>Pasta padrão de saída: Downloads\PCMasterUtility do usuário.</summary>
     public static string DefaultFolder =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads", "PcismoMaster");
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads", "PCMasterUtility");
 
     /// <summary>
     /// Baixa o link. <paramref name="format"/> = "mp3" (áudio) ou "mp4" (vídeo). <paramref name="onLine"/> recebe cada

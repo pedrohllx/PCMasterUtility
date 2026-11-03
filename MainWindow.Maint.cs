@@ -24,7 +24,7 @@ public partial class MainWindow
     private void UpdateMaintWeekly()
     {
         var last = _settings.MaintWeeklyLast;
-        MaintWeeklyLast.Text = last is DateTime d ? $"Última revisão: {d:dd/MM/yyyy HH:mm}" : "Nenhuma revisão feita pelo PcismoMaster ainda.";
+        MaintWeeklyLast.Text = last is DateTime d ? $"Última revisão: {d:dd/MM/yyyy HH:mm}" : "Nenhuma revisão feita pelo PCMasterUtility ainda.";
         MaintWeeklyBadge.Text = last is DateTime l && (DateTime.Now - l).TotalDays < 7 ? "Em dia" : "Recomendado 1 vez por semana";
     }
 
@@ -60,7 +60,7 @@ public partial class MainWindow
     {
         if (_maintCts != null || !RequireAdmin()) return;
         string ask = tool.Title + "?\n\n" + tool.Description
-            + (tool.RestorePoint ? "\n\nAntes, o PcismoMaster cria um ponto de restauração do Windows." : "")
+            + (tool.RestorePoint ? "\n\nAntes, o PCMasterUtility cria um ponto de restauração do Windows." : "")
             + (tool.NeedsReboot ? "\n\nDepois será preciso reiniciar o PC." : "");
         if (MessageBox.Show(this, ask, "Manutenção", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
 

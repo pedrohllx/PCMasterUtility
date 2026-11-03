@@ -1,12 +1,12 @@
-# PcismoMaster
+# PCMasterUtility (antes PcismoMaster)
 
 Assistente e copilota deste projeto. Comunique-se em português.
 
 ## O projeto
 
-PcismoMaster é um aplicativo **Windows** (WPF, .NET 8, C#) para diagnóstico, monitoramento, benchmark e otimização de PC, derivado do **ResetExplode** e incorporando funções do **Ultimate**. Roda como administrador (manifesto `requireAdministrator`) para ler sensores de baixo nível (MSR, Super I/O, NVAPI/NVML).
+PCMasterUtility (antes PcismoMaster; o .exe agora é `PCMasterUtility.exe`, o projeto continua `PcismoMaster.csproj` e as pastas de dados continuam `%LocalAppData%\PcismoMaster` para não perder backups) é um aplicativo **Windows** (WPF, .NET 8, C#) para diagnóstico, monitoramento, benchmark e otimização de PC, derivado do **ResetExplode** e incorporando funções do **Ultimate**. Roda como administrador (manifesto `requireAdministrator`) para ler sensores de baixo nível (MSR, Super I/O, NVAPI/NVML).
 
-- Interface principal herdada do ResetExplode, com identidade própria. Em FERRAMENTAS · Drivers ficam a limpeza com o DDU, a instalação do driver (normal ou enxuta) com as configurações do Ultimate ajustadas à placa, o **Painel NVIDIA** e o **Profile Inspector**. As categorias da navegação lateral aparecem em CAIXA ALTA e em negrito e acendem no nosso azul ao passar o mouse: **MASTER** (sistema, sensores, placa de vídeo, discos, energia, rede), **JOGOS**, **DESEMPENHO** (benchmark, stress test e **Overclock** no estilo do MSI Afterburner), **FERRAMENTAS** (inclui **Utilidades**: sub-sub-abas de baixar vídeos com yt-dlp/ffmpeg e o **Finder** de busca instantânea lendo a MFT NTFS), **MAKER** e **OTIMIZAÇÃO** (sempre abaixo de MAKER; inclui **Desinstalar Apps**, um desinstalador seguro estilo Revo com varredura de sobras e guardas que nunca tocam no Windows/registro do sistema; não recrie uma central separada).
+- Interface principal herdada do ResetExplode, com identidade própria. Em FERRAMENTAS · Drivers ficam a limpeza com o DDU, a instalação do driver (normal ou enxuta) com as configurações do Ultimate ajustadas à placa, o **Painel NVIDIA** e o **Profile Inspector**. As categorias da navegação lateral aparecem em CAIXA ALTA e em negrito e acendem no nosso laranja ao passar o mouse (tema laranja e preto): **MASTER** (sistema, sensores, placa de vídeo, discos, energia, rede), **JOGOS**, **DESEMPENHO** (benchmark, stress test e **Overclock** no estilo do MSI Afterburner), **FERRAMENTAS** (inclui **Utilidades**: sub-sub-abas de baixar vídeos com yt-dlp/ffmpeg e o **Finder** de busca instantânea lendo a MFT NTFS), **MAKER** e **OTIMIZAÇÃO** (sempre abaixo de MAKER; inclui **Desinstalar Apps**, um desinstalador seguro estilo Revo com varredura de sobras e guardas que nunca tocam no Windows/registro do sistema; não recrie uma central separada).
 - Projeto mantido **em dupla**; cada colaborador trabalha na própria conta. `origin` é o repositório PcismoMaster (`vbryanreis/PcismoMaster`); `upstream` é a referência original do GustavoReset. Publique somente no `origin`.
 - Versão atual: **0.7.0**.
 

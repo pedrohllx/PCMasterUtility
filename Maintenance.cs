@@ -144,7 +144,7 @@ public static class Maintenance
     {
         c.Line("Criando ponto de restauração…");
         var lines = new List<string>();
-        string desc = ("PcismoMaster - " + title).Replace("'", "");
+        string desc = ("PCMasterUtility - " + title).Replace("'", "");
         // Sem barra de progresso (o PowerShell a manda como texto CLIXML misturado à saída) e conferindo na lista
         // de pontos do Windows se o novo existe — o Checkpoint-Computer às vezes só avisa, sem erro, quando não cria.
         string script =
@@ -240,7 +240,7 @@ public static class Maintenance
         if (Process.GetProcessesByName("explorer").Length == 0)
         {
             c.Line("Abrindo o Explorer de novo…");
-            // Pelo próprio Windows (sem herdar o modo administrador do PcismoMaster).
+            // Pelo próprio Windows (sem herdar o modo administrador do PCMasterUtility).
             Process.Start(new ProcessStartInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe")) { UseShellExecute = true });
         }
         c.Line("Explorer reiniciado.");
