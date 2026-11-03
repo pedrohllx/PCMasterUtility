@@ -2,8 +2,9 @@
 
 A numeração segue **SemVer** (`MAJOR.MINOR.PATCH`). Regras e processo em [docs/projeto/ATUALIZACOES.md](docs/projeto/ATUALIZACOES.md).
 
-## Não lançado
+## 0.9.0
 
+- **Integra as novidades do PcismoMaster (0.6.3, 0.6.4 e 0.7.0)**: nova aba **JOGOS · Promoções** (IsThereAnyDeal: promoções, menor preço da história, comparar lojas, grátis e jogos da sua biblioteca em promoção), categoria **ArtCraft** em Instalar apps (instalador .msi oficial do GitHub, com assinatura conferida), limpeza dos nomes "RESET" e o `.exe` comprimido (mais leve). Detalhes nas seções do PcismoMaster abaixo. Sem o segredo `ITAD_API_KEY` no repositório, a aba Promoções pede a chave grátis do próprio usuário.
 - **Overlay completo** (JOGOS · Overlay):
   - **Prévia ao vivo** na própria aba, com os números reais deste PC, no formato, na posição e na opacidade escolhidos.
   - **Formato horizontal (barra)**: tudo numa linha só (FPS, frame, 1% low, uso/temperatura/clock de CPU e GPU, VRAM, RAM, jogo).
@@ -85,6 +86,36 @@ A numeração segue **SemVer** (`MAJOR.MINOR.PATCH`). Regras e processo em [docs
 - Novo ComboBox escuro no tema do app.
 - Fluidez: o .exe publicado já vem compilado (ReadyToRun + TieredPGO), sem engasgo ao abrir cada aba pela primeira vez.
 - Versão atualizada para 0.7.0.
+
+## 0.7.0 do PcismoMaster (integrada na 0.9.0)
+
+- Nova aba **Promoções** em JOGOS (logo abaixo da Biblioteca), com o preço dos jogos agora nas lojas e o **menor preço da história**, usando a API gratuita do [IsThereAnyDeal](https://isthereanydeal.com/). Os preços saem na moeda do país do Windows (no Brasil, em reais). Sub-abas:
+  - **Promoções**: cartões com capa, desconto, preço antigo e atual, loja, prazo e selos de "menor da história" / "menor na loja". Filtros de ordenação (em alta, maior desconto, menor preço, mais recentes, populares, melhor avaliados, acabando logo), desconto mínimo, preço máximo, tipo (jogos/DLCs) e lojas (Steam, Epic, GOG, Nuuvem, Microsoft e outras), além de "só menor preço da história" e CARREGAR MAIS.
+  - **Pesquisar**: busca pelo nome e **compara o preço em cada loja**; o botão "Comparar lojas" dos cartões leva direto para cá.
+  - **Grátis**: jogos grátis por tempo limitado (Epic, GOG, Steam…) com o prazo e o botão PEGAR GRÁTIS.
+  - **Da minha biblioteca**: os jogos instalados no PC que estão em promoção agora (Steam pelo appid, os outros pelo nome).
+- Clicar num jogo abre a oferta direto na loja, no navegador. Os dados vêm como a API entrega e o rodapé credita o IsThereAnyDeal (o PcismoMaster não é afiliado a ele).
+- **Chave da API**: o `.exe` do Release já vem com a chave do app (vinda do segredo `ITAD_API_KEY` do GitHub, nunca do código). Quem quiser pode colar a própria chave grátis, que fica cifrada pelo Windows. As respostas ficam alguns minutos em cache para respeitar o limite de consultas. Espaços, quebras de linha e aspas que vêm junto ao colar a chave são removidos, e se a chave for recusada o app diz o motivo exato (faltando, inválida ou expirada).
+- Testes novos (sem rede e sem chave real) para o cliente da API: filtros, leitura das respostas, moeda, chave só no cabeçalho, limpeza da chave colada, cache e mensagens de erro.
+- Versão atualizada para 0.7.0.
+
+## 0.6.4 do PcismoMaster (integrada na 0.9.0)
+
+- Nova categoria **ArtCraft** na aba **Instalar apps**, ao lado das outras (Navegadores, Mensagens, Mídia…), com os apps de criação da [ArtCraft](https://getartcraft.com/apps): **ArtCraft Launcher** (central oficial que instala e atualiza todos de uma vez — recomendado), **PhotoCraft**, **PdfCraft**, **FigCraft** e **Craft Anything**.
+- Como esses apps **não estão no winget**, eles são baixados direto do **GitHub oficial** (sempre o instalador `.msi` da última versão), têm a **assinatura digital conferida** pelo Windows antes de rodar e são instalados **em silêncio** — igualzinho ao fluxo MARCAR / INSTALAR SELECIONADOS dos demais apps.
+- Os outros apps da ArtCraft ainda estão "in development" (sem instalador publicado); entram aqui assim que tiverem download.
+- Versão atualizada para 0.6.4.
+
+## 0.6.3 do PcismoMaster (integrada na 0.9.0)
+
+- **Limpeza da marca "RESET"** herdada do app-base: nomes de recursos deixam de levar o prefixo (`RESET BENCH` → **BENCH**, `RESET MAKER` → **MAKER**, `RESET DRIVER` → **DRIVER**, `RESET FERRAMENTAS` → **FERRAMENTAS**, `RESET JOGOS` → **JOGOS**, `RESET INTEGRAÇÃO` → **INTEGRAÇÃO**, `RESET OC` → **OC**, `RESET OTIMIZA` → **OTIMIZAÇÃO**) em textos, títulos de janelas, mensagens e comentários.
+- Botão do Overclock que restaura os padrões virou **REDEFINIR** (antes "RESET").
+- Corrigidos textos desatualizados: o tooltip de exportação de drivers agora aponta para `Documentos\PcismoMaster-Drivers` (pasta que o app já usava) e as menções internas à pasta de configurações passam a `%AppData%\PcismoMaster`.
+- **Saúde do PC** (Visão geral): o botão **OTIMIZA** agora é **OTIMIZAR**.
+- **Placa de vídeo**: o nome da fabricante no canto do cartão de destaque aparece colorido como uma logo, dentro da nossa paleta — **NVIDIA** no ciano (azul mais próximo do verde) e **AMD** no vermelho; outras (Intel) seguem discretas.
+- Preservados os créditos ao projeto original (MIT) e o namespace interno do código.
+- **App mais leve**: o `.exe` agora usa compressão no single-file — o tamanho cai bastante sem remover nada (todos os módulos continuam presentes, só são descomprimidos em memória ao abrir; a primeira abertura pode levar uma fração de segundo a mais).
+- Versão atualizada para 0.6.3.
 
 ## 0.6.2
 

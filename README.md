@@ -1,10 +1,12 @@
 # PCMasterUtility
 
-Versão 0.8.0. Consulte [CHANGELOG.md](CHANGELOG.md), [CONTRIBUTING.md](CONTRIBUTING.md) e [AGENTS.md](AGENTS.md). Antes de implementar, consulte as atualizações do origin e compare o histórico remoto.
+Versão 0.9.0. Consulte [CHANGELOG.md](CHANGELOG.md), [CONTRIBUTING.md](CONTRIBUTING.md) e [AGENTS.md](AGENTS.md). Antes de implementar, consulte as atualizações do origin e compare o histórico remoto.
 
 Abra dist\PCMasterUtility.exe. A interface principal é a base ResetExplode. Em FERRAMENTAS, a página Inicialização do Windows permite pausar o Windows Update por 365 dias, restaurar os seis valores anteriores e abrir as configurações do Windows Update. A pausa inclui correções de segurança e pode ser limitada pelo Windows. Nenhum ajuste é aplicado automaticamente.
 
-A central separada foi retirada do fluxo. Licenças e créditos preservados em LICENSE e licenses/Ultimate-LICENSE.txt. O motor mantém backups em %LOCALAPPDATA%\PcismoMaster\ModuleBackups.
+Em JOGOS, o **Overlay** mostra FPS, frametime e sensores por cima do jogo em lista vertical (tabela) ou barra horizontal, com prévia ao vivo, seis posições, opacidade, tamanho e tecla de liga/desliga à escolha; a aba **Promoções** usa a API gratuita do [IsThereAnyDeal](https://isthereanydeal.com/) (promoções, menor preço da história, comparar lojas e jogos grátis). Sem o segredo `ITAD_API_KEY` no repositório, a aba pede a chave grátis do próprio usuário. Instalar apps ganhou a categoria **ArtCraft** (instalador oficial do GitHub).
+
+> Projeto mantido em dupla. Antes de mexer, sincronize com o `origin` (`git fetch` + `git pull --ff-only`) e trabalhe em branch própria, entregando por pull request.
 
 FERRAMENTAS contém a página Inicialização do Windows, com o ajuste Windows Update, e o Desinstalar Apps com varredura profunda de sobras (Lixeira e backup do registro e das tarefas em `%LocalAppData%PcismoMasterNINSTALLBACKUPS`). A pausa deriva do Ultimate (licença MIT em licenses).
 
