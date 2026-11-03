@@ -2,7 +2,7 @@
 
 A numeração segue **SemVer** (`MAJOR.MINOR.PATCH`). Regras e processo em [docs/projeto/ATUALIZACOES.md](docs/projeto/ATUALIZACOES.md).
 
-## Não lançado
+## 0.8.0
 
 - **Ícone e logo laranja e preto**: o ícone do app (barra de tarefas, atalhos e .exe) virou a engrenagem em degradê laranja → âmbar sobre um quadrado preto arredondado; o logo da barra de título e do relatório ficou laranja (no modo claro, um laranja mais fechado para ler no branco).
 - **Navegação**: o grupo OTIMIZAÇÃO foi para dentro de **FERRAMENTAS** (Inicialização do Windows logo abaixo de Inicialização e Desinstalar Apps logo abaixo de Instalar apps).
@@ -18,6 +18,7 @@ A numeração segue **SemVer** (`MAJOR.MINOR.PATCH`). Regras e processo em [docs
 - **Tema laranja e preto**: fundo preto neutro com um toque quente e destaque em degradê laranja → âmbar no lugar do roxo/ciano (botões, abas, interruptores, barras de rolagem, hover das categorias, anéis de RAM/VRAM/Disco); texto preto sobre o laranja para ler bem. O modo claro também ganhou neutros quentes e laranja. Cores de temperatura e de status continuam iguais.
 - **Utilidades · Finder mais leve**: o índice da MFT guarda os nomes num buffer único e liga cada item ao pai por posição (busca binária no número do registro), sem milhões de strings soltas nem dicionário. Num teste com 3,5 milhões de itens, a memória do índice caiu de ~480 MB para ~130 MB (processo: ~530 MB → ~190 MB) e a coleta completa do GC de ~40 ms para menos de 1 ms, com a mesma velocidade de busca.
 - O índice sai da memória **5 minutos depois de sair do Finder** (outra sub-aba ou outra página) e é refeito ao voltar.
+- Versão atualizada para 0.8.0.
 
 ## 0.7.0
 
